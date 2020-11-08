@@ -33,7 +33,6 @@ class ToshiFile(ToshiClientBase):
         size = len(filedata.read())
         filedata.close()
 
-
         variables = dict(digest=digest, file_name=filepath.parts[-1], file_size=size)
         executed = self.run_query(qry, variables)
 

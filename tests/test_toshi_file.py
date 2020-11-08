@@ -38,5 +38,5 @@ class TestToshiFile(unittest.TestCase):
             assert post_url["Content-MD5"] == "VXFQl5qqeuR/f4Yr4N0yQg=="
 
             history = m.request_history
-            print('HIST', history[0].text)
+            # print('HIST', history[0].text)
             assert history[0].url == API_URL
