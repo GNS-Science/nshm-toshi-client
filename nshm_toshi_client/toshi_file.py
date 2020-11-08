@@ -32,13 +32,12 @@ class ToshiFile(ToshiClientBase):
         filedata.seek(0) #important!
         size = len(filedata.read())
         filedata.close()
-        # filedata.seek(0) #important!
+
 
         variables = dict(digest=digest, file_name=filepath.parts[-1], file_size=size)
         executed = self.run_query(qry, variables)
 
-        #executed = self.client.execute(qry, variable_values=variables)
-        # print(executed)
+        # print("executed", executed)
         pu = json.loads(executed['createFile']['fileResult']['postUrl'])
         return pu
 
