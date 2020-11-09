@@ -38,10 +38,10 @@ class ToshiFile(ToshiClientBase):
 
         # print("executed", executed)
         pu = json.loads(executed['createFile']['fileResult']['postUrl'])
-        return pu
+        return (executed['createFile']['fileResult']['id'], pu)
 
     def upload_content(self, post_url, filepath):
-        # print('POST DATA %s' % post_url )
+        # print('POST DATA %s' % post_url )s
         filedata = open(filepath, 'rb')
         files = {'file': filedata}
         response = requests.post(
