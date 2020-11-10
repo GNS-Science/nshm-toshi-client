@@ -17,15 +17,20 @@ class RuptureGenerationTask(ToshiClientBase):
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
 
-    def upload_task_file(self, task_id, filepath):
-        #upload file produced
+    def upload_file(self, filepath):
         filepath = PurePath(filepath)
         file_id, post_url = self.file_api.create_file(filepath)
         self.file_api.upload_content(post_url, filepath)
+        return file_id
 
-        #link file in role
-        task_file_id = self.task_file_api.create_task_file(task_id, file_id, 'WRITE')
-        # print("Done", task_file_id)
+    def link_task_file(self, task_id, file_id, task_role):
+        return self.task_file_api.create_task_file(task_id, file_id, task_role)
+
+    def upload_task_file(self, task_id, filepath, task_role):
+        filepath = PurePath(filepath)
+        file_id = self.upload_file(filepath)
+        #link file to task in role
+        return self.link_task_file(task_id, file_id, task_role)
 
     def get_example_create_variables(self):
         return {"started": "2019-10-01T12:00Z",
