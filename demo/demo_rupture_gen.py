@@ -3,9 +3,27 @@ import os
 import datetime as dt
 from dateutil.tz import tzutc
 from nshm_toshi_client.rupture_generation_task import RuptureGenerationTask
+from pathlib import PurePath
+
+import logging
+
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+root.addHandler(handler)
+
 
 S3_URL = "https://nshm-tosh-api-dev.s3.amazonaws.com/"
 API_URL = "https://k6lrxgwqj9.execute-api.ap-southeast-2.amazonaws.com/dev/graphql"
+
+# uncomment for local S3 testing
+# API_URL = 'http://127.0.0.1:5000/graphql'
+# S3_URL = "http://localhost:4569"
+
 API_KEY = "TOSHI_API_KEY_DEV"
 headers={"x-api-key":os.getenv(API_KEY)}
 
@@ -16,7 +34,9 @@ if __name__ == "__main__":
     ruptgen_api = RuptureGenerationTask(API_URL, S3_URL,
         None, with_schema_validation=True, headers=headers)
 
-    config_file_id = ruptgen_api.upload_file(__file__)
+    conf_file = PurePath('./README.md')
+
+    conf_id = ruptgen_api.upload_file(conf_file) #one of WRITE, READ. READ_WRITE
 
     # set the task_'create' values
     create_args = {
@@ -32,11 +52,11 @@ if __name__ == "__main__":
      'minSubSectionsPerParent':2
     }
 
+
     #create the new task, when the task starts (or when scheduledd)
     task_id = ruptgen_api.create_task(create_args)
 
-    #link task to the input file
-    ruptgen_api.link_task_file(task_id, config_file_id, 'READ')
+    ruptgen_api.link_task_file(task_id, conf_id, 'READ')
 
     ##
     # imagine some task work is done now
@@ -57,5 +77,6 @@ if __name__ == "__main__":
     ruptgen_api.complete_task(done_args) #update the task with successful results
 
     #upload some task output file
+    print('ruptgen_api.complete_task(done_args)')
     ruptgen_api.upload_task_file(task_id, __file__, 'WRITE') #one of WRITE, READ. READ_WRITE
     print('Done')

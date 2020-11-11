@@ -7,7 +7,7 @@ import base64
 import hashlib
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 def clean_string(original_string):
     """
@@ -50,7 +50,9 @@ class ToshiClientBase(object):
 
     def run_query(self, query, variable_values=None):
 
-        logger.debug('query: %s' % query)
+        logger.debug('query: %s',  query)
+        logger.debug('variable_values: %s',  variable_values)
+
         variable_values = variable_values or {}
 
         gql_query = gql(query)
@@ -59,7 +61,7 @@ class ToshiClientBase(object):
 
         response = self._client.execute(gql_query, variable_values)
 
-        logger.debug('response: %s' % response)
+        #logger.debug('response: %s', response)
 
         if response.get('errors') is None:
             return response
