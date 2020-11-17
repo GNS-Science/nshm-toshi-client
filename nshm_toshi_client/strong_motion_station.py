@@ -108,3 +108,33 @@ class StrongMotionStation(ToshiClientBase):
         self.validate_variables(self.get_example_create_variables(), input_variables)
         executed = self.run_query(qry, input_variables)
         return executed['create_strong_motion_station']['strong_motion_station']['id']
+
+    def list(self):
+        qry = '''
+        query search_sms {
+          search(
+            search_term: "clazz_name:StrongMotionStation&size=200&sort=created:asc"
+            )
+            {
+            search_result {
+              edges {
+                node {
+                  ... on StrongMotionStation {
+                    id
+                    site_code
+                    created
+                    site_class
+                    site_class_basis
+                    Vs30_mean
+                    bedrock_encountered
+                  }
+                }
+              }
+            }
+          }
+        }
+        '''
+        executed = self.run_query(qry)
+        # print(executed)
+        edges = executed['search']['search_result']['edges']
+        return [e['node'] for e in edges]
