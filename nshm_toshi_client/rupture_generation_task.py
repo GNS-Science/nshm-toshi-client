@@ -34,7 +34,7 @@ class RuptureGenerationTask(ToshiClientBase):
 
     def get_example_create_variables(self):
         return {"started": "2019-10-01T12:00Z",
-          "permutationStrategy": "DOWNDIP",
+          "permutation_strategy": "DOWNDIP",
           "openshaCore": "A",
           "openshaCommons":"b",
           "openshaUcerf3":"C",
@@ -97,38 +97,38 @@ class RuptureGenerationTask(ToshiClientBase):
     def create_task(self, input_variables):
         qry = '''
             mutation create_task ($started:DateTime!,
-              $openshaCore:String!,
-              $openshaCommons:String!,
-              $openshaUcerf3:String!,
-              $nshmNzOpensha: String!,
-              $maxJumpDistance: Float!,
-              $maxSubSectionLength: Float!,
-              $maxCumulativeAzimuth: Float!,
-              $minSubSectionsPerParent: Int!
-              $permutationStrategy: RupturePermutationStrategy!
+              $opensha_core:String!,
+              $opensha_commons:String!,
+              $opensha_ucerf3:String!,
+              $nshm_nz_opensha: String!,
+              $max_jump_distance: Float!,
+              $max_sub_section_length: Float!,
+              $max_cumulative_azimuth: Float!,
+              $min_sub_sections_per_parent: Int!
+              $permutation_strategy: RupturePermutationStrategy!
               ) {
-              createRuptureGenerationTask (
+              create_rupture_generation_task (
                 input: {
                   started: $started
                   state:STARTED
                   result:UNDEFINED
 
                   gitRefs: {
-                    openshaCore: $openshaCore
-                    openshaCommons: $openshaCommons
-                    openshaUcerf3: $openshaUcerf3
-                    nshmNzOpensha: $nshmNzOpensha
+                    opensha_core: $opensha_core
+                    opensha_commons: $opensha_commons
+                    opensha_ucerf3: $opensha_ucerf3
+                    nshm_nz_opensha: $nshm_nz_opensha
                   }
                   arguments: {
-                    maxJumpDistance: $maxJumpDistance
-                    maxSubSectionLength: $maxSubSectionLength
-                    maxCumulativeAzimuth: $maxCumulativeAzimuth
-                    minSubSectionsPerParent: $minSubSectionsPerParent
-                    permutationStrategy: $permutationStrategy
+                    max_jump_distance: $max_jump_distance
+                    max_sub_section_length: $max_sub_section_length
+                    max_cumulative_azimuth: $max_cumulative_azimuth
+                    min_sub_sections_per_parent: $min_sub_sections_per_parent
+                    permutation_strategy: $permutation_strategy
                   }
                 })
                 {
-                  taskResult {
+                  task_result {
                     id
                     }
                 }
@@ -136,4 +136,4 @@ class RuptureGenerationTask(ToshiClientBase):
         '''
         self.validate_variables(self.get_example_create_variables(), input_variables)
         executed = self.run_query(qry, input_variables)
-        return executed['createRuptureGenerationTask']['taskResult']['id']
+        return executed[['create_rupture_generation_task']['task_result']['id']

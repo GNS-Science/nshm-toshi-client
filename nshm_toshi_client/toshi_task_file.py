@@ -11,16 +11,16 @@ class ToshiTaskFile(ToshiClientBase):
             $task_id:ID!
             $file_id:ID!
             $task_role:TaskFileRole!) {
-              createTaskFile(
-                fileId:$file_id
-                taskId:$task_id
-                taskRole:$task_role
+              create_task_file(
+                file_id:$file_id
+                task_id:$task_id
+                task_role:$task_role
               )
             {
-              taskFile { id }
+              task_file { id }
             }
         }'''
 
         variables = dict(task_id=task_id, file_id=file_id, task_role=task_role)
         executed = self.run_query(qry, variables)
-        return executed['createTaskFile']['taskFile']['id']
+        return executed['create_task_file']['task_file']['id']
