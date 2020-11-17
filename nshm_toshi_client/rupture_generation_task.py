@@ -35,24 +35,24 @@ class RuptureGenerationTask(ToshiClientBase):
     def get_example_create_variables(self):
         return {"started": "2019-10-01T12:00Z",
           "permutation_strategy": "DOWNDIP",
-          "openshaCore": "A",
-          "openshaCommons":"b",
-          "openshaUcerf3":"C",
-          "nshmNzOpensha":"D",
-          "maxJumpDistance": 22.2,
-          "maxSubSectionLength": 0.5,
-          "maxCumulativeAzimuth": 501.0,
-          "minSubSectionsPerParent": 2,
+          "opensha_core": "A",
+          "opensha_commons":"b",
+          "opensha_ucerf3":"C",
+          "nshm_nz_opensha":"D",
+          "max_jump_distance": 22.2,
+          "max_sub_section_length": 0.5,
+          "max_cumulative_azimuth": 501.0,
+          "min_sub_sections_per_parent": 2,
           }
 
     def get_example_complete_variables(self):
-          return {"taskId": "UnVwdHVyZUdlbmVyYXRpb25UYXNrOjA=",
+          return {"task_id": "UnVwdHVyZUdlbmVyYXRpb25UYXNrOjA=",
           "duration": 600,
           "result": "SUCCESS",
           "state": "DONE",
-          "ruptureCount": 10,
-          "subsectionCount": 100,
-          "clusterConnectionCount": 100
+          "rupture_count": 10,
+          "subsection_count": 100,
+          "cluster_connection_count": 100
            }
 
     def validate_variables(self, reference, values):
@@ -65,25 +65,25 @@ class RuptureGenerationTask(ToshiClientBase):
     def complete_task(self, input_variables):
         qry = '''
             mutation complete_task (
-              $taskId:ID!
+              $task_id:ID!
               $duration: Float!
               $state:TaskState!
               $result:TaskResult!
-              $subsectionCount:Int!
-              $ruptureCount:Int!
-              $clusterConnectionCount:Int!){
-              updateRuptureGenerationTask(input:{
-                taskId:$taskId
+              $subsection_count:Int!
+              $rupture_count:Int!
+              $cluster_connection_count:Int!){
+              update_rupture_generation_task(input:{
+                task_id:$task_id
                 duration:$duration
                 result:$result
                 state:$state
                 metrics:{
-                  ruptureCount:$ruptureCount
-                  clusterConnectionCount:$clusterConnectionCount
-                  subsectionCount:$subsectionCount
+                  rupture_count:$rupture_count
+                  cluster_connection_count:$cluster_connection_count
+                  subsection_count:$subsection_count
                 }
               }) {
-                taskResult {
+                task_result {
                   id
                 }
               }
@@ -92,7 +92,7 @@ class RuptureGenerationTask(ToshiClientBase):
         '''
         self.validate_variables(self.get_example_complete_variables(), input_variables)
         executed = self.run_query(qry, input_variables)
-        return executed['updateRuptureGenerationTask']['taskResult']['id']
+        return executed['update_rupture_generation_task']['task_result']['id']
 
     def create_task(self, input_variables):
         qry = '''
@@ -113,7 +113,7 @@ class RuptureGenerationTask(ToshiClientBase):
                   state:STARTED
                   result:UNDEFINED
 
-                  gitRefs: {
+                  git_refs: {
                     opensha_core: $opensha_core
                     opensha_commons: $opensha_commons
                     opensha_ucerf3: $opensha_ucerf3
@@ -136,4 +136,5 @@ class RuptureGenerationTask(ToshiClientBase):
         '''
         self.validate_variables(self.get_example_create_variables(), input_variables)
         executed = self.run_query(qry, input_variables)
-        return executed[['create_rupture_generation_task']['task_result']['id']
+        return executed['create_rupture_generation_task']['task_result']['id']
+
