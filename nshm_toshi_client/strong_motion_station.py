@@ -33,7 +33,11 @@ class StrongMotionStation(ToshiClientBase):
         return self.link_task_file(task_id, file_id, task_role)
 
     def get_example_create_variables(self):
-        return {"created": "2019-10-01T12:00Z",
+        return {
+            "created": "2019-10-01T12:00Z",
+            "site_code": "BBBB",
+            "site_class": "E",
+            "Vs30_mean": [1.24,]
           }
 
     def get_example_complete_variables(self):
@@ -82,21 +86,17 @@ class StrongMotionStation(ToshiClientBase):
     def create(self, input_variables):
         qry = '''
             mutation create_strong_motion_station (
-              $created:DateTime!,
-              $openshaCore:String!,
-              $openshaCommons:String!,
-              $openshaUcerf3:String!,
-              $nshmNzOpensha: String!,
-              $maxJumpDistance: Float!,
-              $maxSubSectionLength: Float!,
-              $maxCumulativeAzimuth: Float!,
-              $minSubSectionsPerParent: Int!
-              $permutationStrategy: RupturePermutationStrategy!
+                $created: DateTime!,
+                $site_code: String!,
+                $site_class: SmsSiteClass!,
+                $Vs30_mean: [Float!],
               ) {
               create_strong_motion_station (
                 input: {
-                  created: $created
-
+                    created: $created
+                    site_code: $site_code
+                    site_class: $site_class
+                    Vs30_mean: $Vs30_mean
                 })
                 {
                   strong_motion_station  {
