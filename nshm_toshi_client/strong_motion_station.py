@@ -17,20 +17,49 @@ class StrongMotionStation(ToshiClientBase):
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         # self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
 
-    def upload_file(self, filepath):
+    def _upload_file(self, filepath):
         filepath = PurePath(filepath)
         file_id, post_url = self.file_api.create_file(filepath)
         self.file_api.upload_content(post_url, filepath)
         return file_id
 
-    def link_task_file(self, task_id, file_id, task_role):
-        return self.task_file_api.create_task_file(task_id, file_id, task_role)
+    def _link_file(self, sms_id, file_id, file_type):
+        qry = '''
+        mutation create_sms_link (
+                $sms_id: ID!,
+                $file_id: ID!,
+                $file_type: SmsFileType!,
+            ){
+            create_sms_file_link(
+                file_id: $file_id
+                sms_id: $sms_id
+                file_type: $file_type
+                )
+            {
+                ok
+                sms_file_link { id }
+            }
+        }
+        '''
+        vars = dict(sms_id=sms_id, file_id=file_id, file_type=file_type)
+        executed = self.run_query(qry, vars)
+        print(executed)
+        return executed['create_sms_file_link']['sms_file_link']['id']
 
-    def upload_task_file(self, task_id, filepath, task_role):
+
+    def upload_sms_file(self, sms_id, filepath, file_type):
+        """Upload a local file and associate with some SMS
+        Args:
+            sms_id (TYPE): Description
+            filepath (TYPE): Description
+            file_type (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
         filepath = PurePath(filepath)
-        file_id = self.upload_file(filepath)
-        #link file to task in role
-        return self.link_task_file(task_id, file_id, task_role)
+        file_id = self._upload_file(filepath)
+        return self._link_file(sms_id, file_id, file_type)
 
     def get_example_create_variables(self):
         return {
