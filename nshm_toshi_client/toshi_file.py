@@ -15,13 +15,13 @@ class ToshiFile(ToshiClientBase):
     def create_file(self, filepath):
         qry = '''
             mutation ($digest: String!, $file_name: String!, $file_size: Int!) {
-              createFile(
-                  md5Digest: $digest
-                  fileName: $file_name
-                  fileSize: $file_size
+              create_file(
+                  md5_digest: $digest
+                  file_name: $file_name
+                  file_size: $file_size
               ) {
                   ok
-                  fileResult { id, fileName, fileSize, md5Digest, postUrl }
+                  file_result { id, file_name, file_size, md5_digest, post_url }
               }
             }'''
 
@@ -36,9 +36,9 @@ class ToshiFile(ToshiClientBase):
         variables = dict(digest=digest, file_name=filepath.parts[-1], file_size=size)
         executed = self.run_query(qry, variables)
 
-        # print("executed", executed)
-        pu = json.loads(executed['createFile']['fileResult']['postUrl'])
-        return (executed['createFile']['fileResult']['id'], pu)
+        print("executed", executed)
+        post_url = json.loads(executed['create_file']['file_result']['post_url'])
+        return (executed['create_file']['file_result']['id'], post_url)
 
     def upload_content(self, post_url, filepath):
         # print('POST DATA %s' % post_url )s
