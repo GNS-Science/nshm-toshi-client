@@ -33,7 +33,7 @@ class RuptureGenerationTask(ToshiClientBase):
         return self.link_task_file(task_id, file_id, task_role)
 
     def get_example_create_variables(self):
-        return {"started": "2019-10-01T12:00Z",
+        return {"created": "2019-10-01T12:00Z",
           "permutation_strategy": "DOWNDIP",
           "opensha_core": "A",
           "opensha_commons":"b",
@@ -96,7 +96,7 @@ class RuptureGenerationTask(ToshiClientBase):
 
     def create_task(self, input_variables):
         qry = '''
-            mutation create_task ($started:DateTime!,
+            mutation create_task ($created:DateTime!,
               $opensha_core:String!,
               $opensha_commons:String!,
               $opensha_ucerf3:String!,
@@ -109,7 +109,7 @@ class RuptureGenerationTask(ToshiClientBase):
               ) {
               create_rupture_generation_task (
                 input: {
-                  started: $started
+                  created: $created
                   state:STARTED
                   result:UNDEFINED
 

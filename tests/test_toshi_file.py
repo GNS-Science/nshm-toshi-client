@@ -16,7 +16,6 @@ from nshm_toshi_client.toshi_client_base import clean_string
 API_URL = "http://fake_api/graphql"
 S3_URL = "https://some-tosh-api.com/"
 
-
 import json
 
 class TestToshiFile(unittest.TestCase):
