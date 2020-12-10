@@ -4,6 +4,8 @@ import json
 import base64
 import requests
 from pathlib import PurePath
+from urllib.parse import urlencode
+
 
 from .toshi_client_base import ToshiClientBase
 from nshm_toshi_client.toshi_file import ToshiFile
@@ -167,3 +169,47 @@ class StrongMotionStation(ToshiClientBase):
         # print(executed)
         edges = executed['search']['search_result']['edges']
         return [e['node'] for e in edges]
+
+
+    def get_stations(self, terms=None):
+        terms = terms or {}
+        if not isinstance(terms, dict):
+            raise ValueError("terms must be a dict object, not %s" % type(terms))
+
+        qry = '''
+        query search_sms ($term: String!){
+          search(
+            search_term: $term
+            )
+            {
+            search_result {
+              edges {
+                node {
+                  ... on StrongMotionStation {
+                    id
+                    site_code
+                    created
+                    site_class
+                    site_class_basis
+                    Vs30_mean
+                    bedrock_encountered
+                  }
+                }
+              }
+            }
+          }
+        }
+        '''
+
+
+        default_terms = dict(size=200, sort="created:asc" )
+        default_terms.update(terms)
+        print(default_terms)
+        vars = {"term": "clazz_name:StrongMotionStation&" + urlencode(default_terms, quote_via=lambda a,b,c,d: a)}
+        print (vars)
+        executed = self.run_query(qry, vars)
+        print(executed)
+        edges = executed['search']['search_result']['edges']
+        return [e['node'] for e in edges]
+
+
