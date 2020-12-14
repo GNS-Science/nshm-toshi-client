@@ -20,7 +20,7 @@ class ToshiTaskFile(ToshiClientBase):
               file_link { id }
             }
         }'''
-        variables = dict(task_id=task_id, file_id=file_id, role=task_role)
+        variables = dict(task_id=task_id, file_id=file_id, role=role)
         executed = self.run_query(qry, variables)
         return executed['create_file_link']['file_link']['id']
 
