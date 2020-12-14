@@ -67,8 +67,8 @@ class RuptureGenerationTask(ToshiClientBase):
             mutation complete_task (
               $task_id:ID!
               $duration: Float!
-              $state:TaskState!
-              $result:TaskResult!
+              $state:EventState!
+              $result:EventResult!
               $subsection_count:Int!
               $rupture_count:Int!
               $cluster_connection_count:Int!){
