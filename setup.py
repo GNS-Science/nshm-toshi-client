@@ -21,7 +21,7 @@ URL = 'https://github.com/GNS-Science/nshm-toshi-client'
 EMAIL = 'chrisbc@artisan.co.nz'
 AUTHOR = 'GNS NSHM programme'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.2.8'
+VERSION = '0.2.9'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
