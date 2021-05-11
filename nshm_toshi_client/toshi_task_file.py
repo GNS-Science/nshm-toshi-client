@@ -7,20 +7,21 @@ class ToshiTaskFile(ToshiClientBase):
 
     def create_task_file(self, task_id, file_id, role):
         qry = '''
-        mutation create_file_link(
-            $task_id:ID!
+        mutation create_file_relation(
+            $thing_id:ID!
             $file_id:ID!
             $role:FileRole!) {
-              create_file_link(
+              create_file_relation(
                 file_id:$file_id
-                thing_id:$task_id
+                thing_id:$thing_id
                 role:$role
               )
             {
-              file_link { id }
+              file_relation { id }
             }
         }'''
-        variables = dict(task_id=task_id, file_id=file_id, role=role)
+        variables = dict(thing_id=task_id, file_id=file_id, role=role)
         executed = self.run_query(qry, variables)
-        return executed['create_file_link']['file_link']['id']
+        return executed['create_file_relation']['file_relation']['id']
+
 
