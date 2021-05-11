@@ -56,7 +56,7 @@ class GeneralTask(ToshiClientBase):
                   description: $description
                 })
                 {
-                  task_result {
+                  general_task {
                     id
                     }
                 }
@@ -65,5 +65,5 @@ class GeneralTask(ToshiClientBase):
         print(qry)
         input_variables = dict(created=created, agent_name=agent_name, title=title, description=description)
         executed = self.run_query(qry, input_variables)
-        return executed['create_general_task']['task_result']['id']
+        return executed['create_general_task']['general_task']['id']
 
