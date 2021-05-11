@@ -7,6 +7,7 @@ from pathlib import PurePath
 
 from .toshi_client_base import ToshiClientBase
 from nshm_toshi_client.toshi_file import ToshiFile
+from nshm_toshi_client.toshi_task_file import ToshiTaskFile
 from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
 class RuptureGenerationTask(ToshiClientBase):
