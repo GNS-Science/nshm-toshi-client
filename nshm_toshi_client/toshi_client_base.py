@@ -29,6 +29,14 @@ def attributes_as_str(attributes=None):
             .replace("'", '"')\
             .replace('key: value', 'key: "value"')
 
+def kvl_to_graphql(field_name, kvl_as_dict):
+    assert isinstance(kvl_as_dict, dict)
+    value = "%s: [\n" % field_name
+    for k, v in kvl_as_dict.items():
+        value += '{k: "%s" v: "%s" }\n' % (k,v)
+    value += "]"
+    return value
+
 class ToshiClientBase(object):
 
     def __init__(self, url, auth_token, with_schema_validation=True, headers=None ):

@@ -4,7 +4,7 @@ import json
 import base64
 import requests
 
-from .toshi_client_base import ToshiClientBase
+from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
 class ToshiFile(ToshiClientBase):
 
@@ -12,18 +12,26 @@ class ToshiFile(ToshiClientBase):
         super(ToshiFile, self).__init__(url, auth_token, with_schema_validation, headers)
         self._s3_url = s3_url
 
-    def create_file(self, filepath):
+    def create_file(self, filepath, meta=None):
         qry = '''
             mutation ($digest: String!, $file_name: String!, $file_size: Int!) {
               create_file(
                   md5_digest: $digest
                   file_name: $file_name
                   file_size: $file_size
+
+                  ##META##
+
               ) {
                   ok
-                  file_result { id, file_name, file_size, md5_digest, post_url }
+                  file_result { id, file_name, file_size, md5_digest, post_url, meta {k v}}
               }
             }'''
+
+        if meta:
+            qry = qry.replace("##META##", kvl_to_graphql('meta', meta))
+
+        print(qry)
 
         filedata = open(filepath, 'rb')
         digest = base64.b64encode(md5(filedata.read()).digest()).decode()
