@@ -56,3 +56,22 @@ class ToshiFile(ToshiClientBase):
             url=self._s3_url,
             data=post_url,
             files=files)
+
+
+    def get_download_url(self, id):
+        qry = '''
+        query download_file (id:ID!) {
+                node(id: $id) {
+            __typename
+            ... on File {
+              file_name
+              file_size
+              file_url
+            }
+          }
+        }'''
+
+        print(qry)
+        input_variables = dict(id=id)
+        executed = self.run_query(qry, input_variables)
+        return executed['node']
