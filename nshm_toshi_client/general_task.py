@@ -70,7 +70,7 @@ class GeneralTask(ToshiClientBase):
 
     def get_subtask_files(self, id):
         qry = '''
-            query one_general (id:ID!) {
+            query one_general ($id:ID!)  {
               node(id: $id) {
                 __typename
                 ... on GeneralTask {

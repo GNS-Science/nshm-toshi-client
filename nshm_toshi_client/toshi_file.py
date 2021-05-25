@@ -60,7 +60,7 @@ class ToshiFile(ToshiClientBase):
 
     def get_download_url(self, id):
         qry = '''
-        query download_file (id:ID!) {
+        query download_file ($id:ID!) {
                 node(id: $id) {
             __typename
             ... on File {
