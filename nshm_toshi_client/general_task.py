@@ -77,7 +77,7 @@ class GeneralTask(ToshiClientBase):
                   title
                   created
                   children {
-                    total_count
+                    #total_count
                     edges {
                       node {
                         child {
@@ -88,7 +88,7 @@ class GeneralTask(ToshiClientBase):
                           ... on RuptureGenerationTask {
                             created
                             files {
-                              total_count
+                              #total_count
                               edges {
                                 node {
                                   file {
