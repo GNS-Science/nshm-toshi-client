@@ -91,6 +91,7 @@ class GeneralTask(ToshiClientBase):
                               #total_count
                               edges {
                                 node {
+                                  role
                                   file {
                                     ... on File {
                                       id
