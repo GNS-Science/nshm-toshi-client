@@ -67,3 +67,51 @@ class GeneralTask(ToshiClientBase):
         executed = self.run_query(qry, input_variables)
         return executed['create_general_task']['general_task']['id']
 
+
+    def get_subtask_files(self, id):
+        qry = '''
+            query one_general ($id:ID!)  {
+              node(id: $id) {
+                __typename
+                ... on GeneralTask {
+                  title
+                  created
+                  children {
+                    #total_count
+                    edges {
+                      node {
+                        child {
+                          __typename
+                          ... on Node {
+                            id
+                          }
+                          ... on RuptureGenerationTask {
+                            created
+                            files {
+                              #total_count
+                              edges {
+                                node {
+                                  file {
+                                    ... on File {
+                                      id
+                                      file_name
+                                      file_size
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }'''
+
+        print(qry)
+        input_variables = dict(id=id)
+        executed = self.run_query(qry, input_variables)
+        return executed['node']
+
