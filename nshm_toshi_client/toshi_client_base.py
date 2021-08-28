@@ -39,7 +39,7 @@ def kvl_to_graphql(field_name, kvl_as_dict):
 
 class ToshiClientBase(object):
 
-    def __init__(self, url, auth_token, with_schema_validation=True, headers=None ):
+    def __init__(self, url, auth_token, with_schema_validation=True, headers=None, retries=6, timeout=None):
         """Summary
 
         Args:
@@ -51,7 +51,7 @@ class ToshiClientBase(object):
         if headers == None:
             headers = {"Authorization": "Bearer %s" % auth_token}
 
-        transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True)
+        transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
         self._client = Client(transport=transport,
             fetch_schema_from_transport=with_schema_validation)
         self._with_schema_validation = with_schema_validation

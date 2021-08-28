@@ -1,9 +1,7 @@
 # from gql import gql
 from hashlib import md5
 import json
-import base64
-import requests
-from pathlib import PurePath
+
 
 from .toshi_client_base import ToshiClientBase
 from nshm_toshi_client.toshi_file import ToshiFile
@@ -88,6 +86,7 @@ class GeneralTask(ToshiClientBase):
                           ... on RuptureGenerationTask {
                             created
                             state
+
                             result
                             arguments {k v}
                             files {

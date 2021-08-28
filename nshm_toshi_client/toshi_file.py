@@ -3,8 +3,30 @@ from hashlib import md5
 import json
 import base64
 import requests
+# import http
 
+from requests.packages.urllib3.util.retry import Retry
 from .toshi_client_base import ToshiClientBase, kvl_to_graphql
+
+from .timeout_http_adapter import TimeoutHTTPAdapter
+
+#see https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+session = requests.Session()
+# http.client.HTTPConnection.debuglevel = 1 #prints some header
+
+# this is for our file upload
+retry_strategy = Retry(
+    total=6,
+    backoff_factor=5,
+    status_forcelist=[429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"]
+)
+
+# Mount it for both http and https usage
+adapter = TimeoutHTTPAdapter(timeout=2.5, max_retries=retry_strategy)
+session.mount("https://", adapter)
+session.mount("http://", adapter)
+
 
 class ToshiFile(ToshiClientBase):
 
