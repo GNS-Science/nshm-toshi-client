@@ -17,11 +17,11 @@ class ToshiTaskFile(ToshiClientBase):
                 role:$role
               )
             {
-              file_relation { id }
+              ok
             }
         }'''
         variables = dict(thing_id=task_id, file_id=file_id, role=role)
         executed = self.run_query(qry, variables)
-        return executed['create_file_relation']['file_relation']['id']
+        return executed['create_file_relation']['ok']
 
 
