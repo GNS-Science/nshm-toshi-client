@@ -3,6 +3,7 @@ from hashlib import md5
 import json
 import base64
 import requests
+import logging
 # import http
 
 from requests.packages.urllib3.util.retry import Retry
@@ -27,6 +28,7 @@ adapter = TimeoutHTTPAdapter(timeout=2.5, max_retries=retry_strategy)
 session.mount("https://", adapter)
 session.mount("http://", adapter)
 
+log = logging.getLogger(__name__)
 
 class ToshiFile(ToshiClientBase):
 
@@ -79,6 +81,17 @@ class ToshiFile(ToshiClientBase):
             data=post_url,
             files=files)
 
+        log.debug(f'upload_content() POST URL: {post_url}; PATH: {filepath}')
+        filedata = open(filepath, 'rb')
+        files = {'file': filedata}
+        log.debug(f'upload_content() _s3_url: {self._s3_url}')
+
+        response = requests.post(
+            url=self._s3_url,
+            data=post_url,
+            files=files)
+        log.debug(f'response {response}')
+        response.raise_for_status()
 
     def get_download_url(self, id):
         qry = '''
