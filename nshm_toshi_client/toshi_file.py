@@ -73,14 +73,6 @@ class ToshiFile(ToshiClientBase):
         return (executed['create_file']['file_result']['id'], post_url)
 
     def upload_content(self, post_url, filepath):
-        # print('POST DATA %s' % post_url )s
-        filedata = open(filepath, 'rb')
-        files = {'file': filedata}
-        response = requests.post(
-            url=self._s3_url,
-            data=post_url,
-            files=files)
-
         log.debug(f'upload_content() POST URL: {post_url}; PATH: {filepath}')
         filedata = open(filepath, 'rb')
         files = {'file': filedata}
