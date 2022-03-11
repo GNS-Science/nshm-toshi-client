@@ -7,7 +7,6 @@ import base64
 import hashlib
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 def clean_string(original_string):
     """
