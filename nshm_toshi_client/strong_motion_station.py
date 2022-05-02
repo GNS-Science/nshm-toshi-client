@@ -1,18 +1,21 @@
 # from gql import gql
-from hashlib import md5
-import json
 import base64
-import requests
+import json
+from hashlib import md5
 from pathlib import PurePath
 
-from .toshi_client_base import ToshiClientBase
+import requests
+
 from nshm_toshi_client.toshi_file import ToshiFile
+
+from .toshi_client_base import ToshiClientBase
+
 # from nshm_toshi_client.toshi_task_file import ToshiTaskFile
-#from .toshi_file import ToshiFile
+# from .toshi_file import ToshiFile
+
 
 class StrongMotionStation(ToshiClientBase):
-
-    def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None ):
+    def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None):
         super(StrongMotionStation, self).__init__(toshi_api_url, auth_token, with_schema_validation, headers)
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         # self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
@@ -46,7 +49,6 @@ class StrongMotionStation(ToshiClientBase):
         print(executed)
         return executed['create_sms_file_link']['sms_file_link']['id']
 
-
     def upload_sms_file(self, sms_id, filepath, file_type):
         """Upload a local file and associate with some SMS
         Args:
@@ -66,12 +68,15 @@ class StrongMotionStation(ToshiClientBase):
             "created": "2019-10-01T12:00Z",
             "site_code": "BBBB",
             "site_class": "E",
-            "Vs30_mean": [1.24,]
-          }
+            "Vs30_mean": [
+                1.24,
+            ],
+        }
 
     def get_example_complete_variables(self):
-          return {"id": "UnVwdHVyZUdlbmVyYXRpb25UYXNrOjA=",
-           }
+        return {
+            "id": "UnVwdHVyZUdlbmVyYXRpb25UYXNrOjA=",
+        }
 
     def validate_variables(self, reference, values):
         valid_keys = reference.keys()

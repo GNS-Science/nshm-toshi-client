@@ -1,17 +1,19 @@
 # from gql import gql
-from hashlib import md5
-import json
 import base64
-import requests
+import json
 import logging
-# import http
+from hashlib import md5
 
+import requests
 from requests.packages.urllib3.util.retry import Retry
-from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
 from .timeout_http_adapter import TimeoutHTTPAdapter
+from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
-#see https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
+# import http
+
+
+# see https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/
 session = requests.Session()
 # http.client.HTTPConnection.debuglevel = 1 #prints some header
 
@@ -20,7 +22,7 @@ retry_strategy = Retry(
     total=6,
     backoff_factor=5,
     status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"]
+    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"],
 )
 
 # Mount it for both http and https usage
@@ -30,9 +32,9 @@ session.mount("http://", adapter)
 
 log = logging.getLogger(__name__)
 
-class ToshiFile(ToshiClientBase):
 
-    def __init__(self, url, s3_url, auth_token, with_schema_validation=True, headers=None ):
+class ToshiFile(ToshiClientBase):
+    def __init__(self, url, s3_url, auth_token, with_schema_validation=True, headers=None):
         super(ToshiFile, self).__init__(url, auth_token, with_schema_validation, headers)
         self._s3_url = s3_url
 
@@ -61,7 +63,7 @@ class ToshiFile(ToshiClientBase):
         digest = base64.b64encode(md5(filedata.read()).digest()).decode()
         # print('DIGEST:', digest)
 
-        filedata.seek(0) #important!
+        filedata.seek(0)  # important!
         size = len(filedata.read())
         filedata.close()
 
@@ -78,10 +80,7 @@ class ToshiFile(ToshiClientBase):
         files = {'file': filedata}
         log.debug(f'upload_content() _s3_url: {self._s3_url}')
 
-        response = requests.post(
-            url=self._s3_url,
-            data=post_url,
-            files=files)
+        response = requests.post(url=self._s3_url, data=post_url, files=files)
         log.debug(f'response {response}')
         response.raise_for_status()
 
