@@ -113,7 +113,7 @@ name = "bump2version"
 version = "1.0.1"
 description = "Version-bump your software with a single command!"
 category = "dev"
-optional = true
+optional = false
 python-versions = ">=3.5"
 
 [[package]]
@@ -1120,7 +1120,7 @@ test = []
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "4734a4dfd7f904b0c100a760e89b83ff82de1360f1d9989b2aa7120248f2a263"
+content-hash = "8f42ec41279e23e598be4442818299d9d73877d2eb84a4770bb24313650be1df"
 
 [metadata.files]
 aiohttp = [
