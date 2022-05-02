@@ -1,16 +1,15 @@
 # from gql import gql
-from hashlib import md5
 import json
+from hashlib import md5
 
-
-from .toshi_client_base import ToshiClientBase
 from nshm_toshi_client.toshi_file import ToshiFile
 from nshm_toshi_client.toshi_task_file import ToshiTaskFile
+
 from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
-class GeneralTask(ToshiClientBase):
 
-    def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None ):
+class GeneralTask(ToshiClientBase):
+    def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None):
         super(GeneralTask, self).__init__(toshi_api_url, auth_token, with_schema_validation, headers)
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
@@ -65,7 +64,6 @@ class GeneralTask(ToshiClientBase):
         executed = self.run_query(qry, input_variables)
         return executed['create_general_task']['general_task']['id']
 
-
     def get_subtask_files(self, id):
         qry = '''
             query one_general ($id:ID!)  {
@@ -118,4 +116,3 @@ class GeneralTask(ToshiClientBase):
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         return executed['node']
-

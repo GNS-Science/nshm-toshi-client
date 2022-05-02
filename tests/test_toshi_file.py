@@ -18,8 +18,8 @@ S3_URL = "https://some-tosh-api.com/"
 
 import json
 
-class TestToshiFile(unittest.TestCase):
 
+class TestToshiFile(unittest.TestCase):
     def test_create_toshi_file_ok(self):
         with requests_mock.Mocker() as m:
 
@@ -28,7 +28,7 @@ class TestToshiFile(unittest.TestCase):
             query1_server_answer = '{"data":{"create_file":{"file_result":{"id":"ABCD","post_url":"%s"}}}}' % post_url
 
             m.post(API_URL, text=query1_server_answer)
-            headers={"x-api-key":"THE_API_KEY"}
+            headers = {"x-api-key": "THE_API_KEY"}
             myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
 
             filepath = Path(__file__)
@@ -40,7 +40,6 @@ class TestToshiFile(unittest.TestCase):
             # print('HIST', history[0].text)
             assert history[0].url == API_URL
 
-
     def test_create_toshi_file_with_meta_ok(self):
         with requests_mock.Mocker() as m:
 
@@ -49,7 +48,7 @@ class TestToshiFile(unittest.TestCase):
             query1_server_answer = '{"data":{"create_file":{"file_result":{"id":"ABCD","post_url":"%s"}}}}' % post_url
 
             m.post(API_URL, text=query1_server_answer)
-            headers={"x-api-key":"THE_API_KEY"}
+            headers = {"x-api-key": "THE_API_KEY"}
             myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
 
             meta = dict(mykey="myvalue", mykey2='myothervalue')
@@ -62,4 +61,3 @@ class TestToshiFile(unittest.TestCase):
             history = m.request_history
             # print('HIST', history[0].text)
             assert history[0].url == API_URL
-

@@ -89,3 +89,16 @@ dmypy.json
 
 #local
 man/**
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+# IDE settings
+.vscode/
+.idea/
+
+# mkdocs build dir
+site/
