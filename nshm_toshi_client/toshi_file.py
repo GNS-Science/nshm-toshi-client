@@ -101,3 +101,29 @@ class ToshiFile(ToshiClientBase):
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         return executed['node']
+
+    def get_file(self, id, with_file_url: bool = False):
+        qry = '''
+        query file ($id:ID!) {
+                node(id: $id) {
+            __typename
+            ... on Node {
+              id
+            }
+            ... on FileInterface {
+              file_name
+              file_size
+              meta {k v}
+              
+             #FILE_URL
+             
+            }
+          }
+        }'''
+        if with_file_url:
+            qry = qry.replace("#FILE_URL", "file_url")
+
+        print(qry)
+        input_variables = dict(id=id)
+        executed = self.run_query(qry, input_variables)
+        return executed['node']
