@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 from hashlib import md5
+from xmlrpc.client import Boolean
 
 import requests
 from requests.packages.urllib3.util.retry import Retry
@@ -102,27 +103,7 @@ class ToshiFile(ToshiClientBase):
         executed = self.run_query(qry, input_variables)
         return executed['node']
 
-    def get_file(self, id):
-        qry = '''
-        query file ($id:ID!) {
-                node(id: $id) {
-            __typename
-            ... on Node {
-              id
-            }
-            ... on FileInterface {
-              file_name
-              file_size
-            }
-          }
-        }'''
-
-        print(qry)
-        input_variables = dict(id=id)
-        executed = self.run_query(qry, input_variables)
-        return executed['node']
-
-    def get_file_detail(self, id):
+    def get_file(self, id, with_file_url: bool = False):
         qry = '''
         query file ($id:ID!) {
                 node(id: $id) {
@@ -134,30 +115,14 @@ class ToshiFile(ToshiClientBase):
               file_name
               file_size
               meta {k v}
+              
+             #FILE_URL
+             
             }
           }
         }'''
-
-        print(qry)
-        input_variables = dict(id=id)
-        executed = self.run_query(qry, input_variables)
-        return executed['node']
-
-    def get_file_download_url(self, id):
-        qry = '''
-        query download_file ($id:ID!) {
-                node(id: $id) {
-            __typename
-            ... on Node {
-              id
-            }
-            ... on FileInterface {
-              file_name
-              file_size
-              file_url
-            }
-          }
-        }'''
+        if with_file_url:
+            qry = qry.replace("#FILE_URL", "file_url")
 
         print(qry)
         input_variables = dict(id=id)
