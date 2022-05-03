@@ -356,8 +356,36 @@
                   <h1>Usage</h1>
                 
                 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>To use deluge-cmd in a project</p>
-<div class="highlight"><pre><span></span><code>import deluge_cmd
+<p>To use ToshiFile.get_file in a project</p>
+<div class="highlight"><pre><span></span><code>from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
+headers={&quot;x-api-key&quot;:API_KEY}
+api = ToshiFile(API_URL, None, None, headers=headers)
+
+file = api.get_file(&#39;{example_id}&#39;)
+</code></pre></div>
+<p>Example response</p>
+<div class="highlight"><pre><span></span><code>{&#39;__typename&#39;: &#39;InversionSolutionNrml&#39;,
+  &#39;id&#39;: &#39;SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==&#39;,
+  &#39;file_name&#39;: &#39;NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip&#39;,
+  &#39;file_size&#39;: 3331426,
+  &#39;meta&#39;: {&#39;mykey&#39;: &#39;myvalue&#39;, &#39;mykey2&#39;: &#39;myothervalue&#39;}
+}
+</code></pre></div>
+<p>To use ToshiClient.get_file and get file_url in a project</p>
+<div class="highlight"><pre><span></span><code>from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
+headers={&quot;x-api-key&quot;:API_KEY}
+api = ToshiFile(API_URL, None, None, headers=headers)
+
+file = api.get_file_download_url(&#39;{example_id}&#39;, true)
+</code></pre></div>
+<p>Example response</p>
+<div class="highlight"><pre><span></span><code>{&#39;__typename&#39;: &#39;InversionSolutionNrml&#39;,
+  &#39;id&#39;: &#39;SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==&#39;,
+  &#39;file_name&#39;: &#39;NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip&#39;,
+  &#39;file_size&#39;: 3331426,
+  &#39;meta&#39;: {&#39;mykey&#39;: &#39;myvalue&#39;, &#39;mykey2&#39;: &#39;myothervalue&#39;},
+  &#39;file_url&#39;: &#39;https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip&#39;
+}
 </code></pre></div>
                 
               
