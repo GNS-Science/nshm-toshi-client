@@ -3,7 +3,6 @@ import base64
 import json
 import logging
 from hashlib import md5
-from xmlrpc.client import Boolean
 
 import requests
 from requests.packages.urllib3.util.retry import Retry
