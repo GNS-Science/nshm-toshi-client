@@ -2,6 +2,7 @@
 Test schema operations
 """
 
+import json
 from io import BytesIO
 from unittest import mock
 from pathlib import Path
@@ -15,8 +16,6 @@ from nshm_toshi_client.toshi_client_base import clean_string
 
 API_URL = "http://fake_api/graphql"
 S3_URL = "https://some-tosh-api.com/"
-
-import json
 
 
 class TestToshiFile(unittest.TestCase):
@@ -61,3 +60,82 @@ class TestToshiFile(unittest.TestCase):
             history = m.request_history
             # print('HIST', history[0].text)
             assert history[0].url == API_URL
+
+    def test_get_file_ok(self):
+        with requests_mock.Mocker() as m:
+
+            query1_server_answer = '''{
+                "data": {
+                    "node": {
+                        "__typename": "InversionSolutionNrml",
+                        "id": "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==",
+                        "file_name": "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip",
+                        "file_size": 3331426
+                    }
+                }
+            }'''
+
+            m.post(API_URL, text=query1_server_answer)
+            headers = {"x-api-key": "THE_API_KEY"}
+            myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
+
+            file_detail = myapi.get_file("SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==")
+            print(file_detail)
+            assert file_detail["id"] == "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw=="
+            assert file_detail["file_name"] == "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+            assert file_detail["file_size"] == 3331426
+
+    def test_get_file_detail_ok(self):
+        with requests_mock.Mocker() as m:
+
+            query1_server_answer = '''{
+                "data": {
+                    "node": {
+                        "__typename": "InversionSolutionNrml",
+                        "id": "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==",
+                        "file_name": "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip",
+                        "file_size": 3331426,
+                        "meta": {"mykey":"myvalue","mykey2":"myothervalue"}
+                    }
+                }
+            }'''
+
+            m.post(API_URL, text=query1_server_answer)
+            headers = {"x-api-key": "THE_API_KEY"}
+            myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
+
+            file_detail = myapi.get_file_detail("SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==")
+            print(file_detail)
+            assert file_detail["id"] == "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw=="
+            assert file_detail["file_name"] == "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+            assert file_detail["file_size"] == 3331425
+            assert file_detail["meta"] == {"mykey": "myvalue", "mykey2": "myothervalue"}
+
+    def test_get_file__dowload_url_ok(self):
+        with requests_mock.Mocker() as m:
+
+            query1_server_answer = '''{
+                "data": {
+                    "node": {
+                        "__typename": "InversionSolutionNrml",
+                        "id": "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==",
+                        "file_name": "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip",
+                        "file_size": 3331426,
+                        "file_url": "https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+                    }
+                }
+            }'''
+
+            m.post(API_URL, text=query1_server_answer)
+            headers = {"x-api-key": "THE_API_KEY"}
+            myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
+
+            file_detail = myapi.get_file_download_url("SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==")
+            print(file_detail)
+            assert file_detail["id"] == "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw=="
+            assert file_detail["file_name"] == "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+            assert file_detail["file_size"] == 3331425
+            assert (
+                file_detail["file_url"]
+                == "https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+            )
