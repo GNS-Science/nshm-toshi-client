@@ -6,12 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.6.1] - 2022-05-05
+### Changes
+ - disabled schema validation (for now?)
+
 ## [0.6.0] - 2022-05-04
 ### Added
 - get_file method to ToshiFile class
 - tests for get_file method
 - update usage.md
-
 
 ## [0.5.3] - 2022-05-02
 ### Changes
