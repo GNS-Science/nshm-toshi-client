@@ -1,5 +1,19 @@
 # Usage
 
+## Setup
+
+Required env variables:
+
+```
+NZSHM22_TOSHI_API_URL=https://example-api-url.com
+NZSHM22_TOSHI_API_KEY=example-api-key
+NZSHM22_TOSHI_S3_URL=https://example-s3-url.com
+```
+
+contact @chrisbc for real urls/keys
+
+## Methods
+
 To use ToshiFile.get_file in a project
 
 ```
