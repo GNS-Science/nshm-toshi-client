@@ -2,6 +2,7 @@
 import base64
 import json
 import logging
+import os
 from hashlib import md5
 
 import requests
@@ -127,3 +128,37 @@ class ToshiFile(ToshiClientBase):
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         return executed['node']
+
+    def download_file(self, id, target_dir):
+        qry = '''
+        query file ($id:ID!) {
+                node(id: $id) {
+            __typename
+            ... on Node {
+              id
+            }
+            ... on FileInterface {
+              file_name
+              file_url
+            }
+          }
+        }'''
+        
+        print(qry) 
+        input_variables = dict(id=id)
+        executed = self.run_query(qry, input_variables)
+        url = executed['node']['file_url']
+        filename = executed['node']['file_name']
+        
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+
+        file_path = os.path.join(target_dir, filename)
+
+        r = requests.get(url, stream=True)
+        if r.ok:
+            print(f"saving to", os.path.abspath(file_path))
+            with open(file_path, 'wb') as f:
+                f.write(r.content)
+        else:
+            print(f"Download failed: status code {r.status_code}\n{r.text}")
