@@ -143,15 +143,15 @@ class ToshiFile(ToshiClientBase):
             }
           }
         }'''
-        
-        print(qry) 
+
+        print(qry)
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         url = executed['node']['file_url']
         filename = executed['node']['file_name']
-        
+
         if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
+            os.mkdir(target_dir)
 
         file_path = os.path.join(target_dir, filename)
 
@@ -161,4 +161,4 @@ class ToshiFile(ToshiClientBase):
             with open(file_path, 'wb') as f:
                 f.write(r.content)
         else:
-            print(f"Download failed: status code {r.status_code}\n{r.text}")
+            print(f"Download failed: status code {r.status_code}")

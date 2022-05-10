@@ -6,6 +6,8 @@ import json
 from io import BytesIO
 from unittest import mock
 from pathlib import Path
+import os
+import shutil
 
 import unittest
 
@@ -117,3 +119,57 @@ class TestToshiFile(unittest.TestCase):
                 file_detail["file_url"]
                 == "https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
             )
+
+    def mocked_requests_get(*args, **kwargs):
+        with open(Path(__file__).parent / "test_data" / "sample.zip", "rb") as f:
+            mock_zip = BytesIO(f.read())
+            mock_zip.seek(0)
+
+        class MockResponse:
+            def __init__(self, json_data, status_code, ok):
+                self.json = json_data
+                self.status_code = status_code
+                self.ok = ok
+                self.content = mock_zip.read()
+
+        if (
+            args[0]
+            == 'https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip'
+        ):
+            return MockResponse({"key1": "value1"}, 200, True)
+        else:
+            return MockResponse(None, 404, False)
+
+    @mock.patch('nshm_toshi_client.toshi_file.requests.get', side_effect=mocked_requests_get)
+    def test_download_file_ok(self, mock_get):
+        with requests_mock.Mocker() as m:
+
+            query1_server_answer = '''{
+                "data": {
+                    "node": {
+                        "__typename": "InversionSolutionNrml",
+                        "id": "SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==",
+                        "file_name": "NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip",
+                        "file_url": "https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip"
+                    }
+                }
+            }'''
+
+            m.post(API_URL, text=query1_server_answer)
+            headers = {"x-api-key": "THE_API_KEY"}
+            myapi = ToshiFile(API_URL, S3_URL, None, with_schema_validation=False, headers=headers)
+
+            dir_path = os.path.abspath(os.getcwd())
+            file_path = os.path.join(dir_path, "tmp")
+
+            myapi.download_file(
+                "https://s3.amazonaws.com/toshi-files/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip",
+                file_path,
+            )
+
+            assert os.path.exists(f"{file_path}/NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip")
+
+    def tearDown(self) -> None:
+        tmp_dir = os.path.join(os.path.abspath(os.getcwd()), "tmp")
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
