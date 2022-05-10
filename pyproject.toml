@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nshm-toshi-client"
-version = "0.6.0"
+version = "0.7.0"
 description = "client for toshi API"
 authors = ["Chris Chamberlain <chrisbc@artisan.co.nz>"]
 readme="README.md"
