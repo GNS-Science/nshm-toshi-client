@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ## [1.0.0] - 2022-05-13
 ### Added
+- ToshiFile.download_file function
 - doco for env variables
 ### Changes
+- update usage.md with download_file instruction usage
 - File.file_size from Int to BigInt
 
 ## [0.6.1] - 2022-05-05
