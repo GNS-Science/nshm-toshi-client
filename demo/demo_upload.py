@@ -23,7 +23,7 @@ class DataFileClient():
 
     def upload(self, filename):
         qry = gql('''
-            mutation ($file: Upload!, $digest: String!, $file_name: String!, $file_size: Int!) {
+            mutation ($file: Upload!, $digest: String!, $file_name: String!, $file_size: BigInt!) {
               createFile(
                   fileIn: $file
                   hexDigest: $digest

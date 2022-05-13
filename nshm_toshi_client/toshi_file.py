@@ -40,7 +40,7 @@ class ToshiFile(ToshiClientBase):
 
     def create_file(self, filepath, meta=None):
         qry = '''
-            mutation ($digest: String!, $file_name: String!, $file_size: Int!) {
+            mutation ($digest: String!, $file_name: String!, $file_size: BigInt!) {
               create_file(
                   md5_digest: $digest
                   file_name: $file_name
