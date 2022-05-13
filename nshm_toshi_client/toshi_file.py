@@ -124,12 +124,12 @@ class ToshiFile(ToshiClientBase):
         if with_file_url:
             qry = qry.replace("#FILE_URL", "file_url")
 
-        print(qry)
+        # print(qry)
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         return executed['node']
 
-    def download_file(self, id, target_dir):
+    def download_file(self, id, target_dir, target_name=None):
         qry = '''
         query file ($id:ID!) {
                 node(id: $id) {
@@ -144,11 +144,11 @@ class ToshiFile(ToshiClientBase):
           }
         }'''
 
-        print(qry)
+        # print(qry)
         input_variables = dict(id=id)
         executed = self.run_query(qry, input_variables)
         url = executed['node']['file_url']
-        filename = executed['node']['file_name']
+        filename = target_name if target_name else executed['node']['file_name']
 
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
@@ -157,8 +157,8 @@ class ToshiFile(ToshiClientBase):
 
         r = requests.get(url, stream=True)
         if r.ok:
-            print(f"saving to", os.path.abspath(file_path))
             with open(file_path, 'wb') as f:
                 f.write(r.content)
+            return file_path
         else:
-            print(f"Download failed: status code {r.status_code}")
+            raise (RuntimeError(f'Error downloading file {filename}: Status code {r.status_code}'))
