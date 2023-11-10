@@ -15,9 +15,9 @@ packages = [
 python = "^3.8"
 requests = "^2.27.1"
 graphql-core = "^3.2.1"
-gql = "^3.2.0"
 aiohttp = "^3.8.1"
 async-timeout = "^4.0.2"
+gql = {extras = ["requests"], version = "^3.4.1"}
 
 [tool.poetry.dev-dependencies]
 requests-mock = "^1.9.3"
