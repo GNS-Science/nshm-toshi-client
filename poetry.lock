@@ -1393,17 +1393,6 @@ files = [
 ]
 
 [[package]]
-name = "pip"
-version = "22.3.1"
-description = "The PyPA recommended tool for installing Python packages."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "pip-22.3.1-py3-none-any.whl", hash = "sha256:908c78e6bc29b676ede1c4d57981d490cb892eb45cd8c214ab6298125119e077"},
-    {file = "pip-22.3.1.tar.gz", hash = "sha256:65fd48317359f3af8e593943e6ae1506b66325085ea64b706a998c6e83eeaf38"},
-]
-
-[[package]]
 name = "pkginfo"
 version = "1.9.6"
 description = "Query metadata from sdists / bdists / installed packages."
@@ -2138,4 +2127,4 @@ test = []
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "a5aaa2d02d3ded4d45b922c5355482510c19656bb52398cf08ab53eae7c0aa17"
+content-hash = "ab62054253fee1279ad1e7a9ac1964061a16dbd4cefaa13ace408be62719f8f5"
