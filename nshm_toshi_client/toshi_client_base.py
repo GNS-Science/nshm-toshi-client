@@ -1,8 +1,4 @@
-import base64
-import hashlib
-import json
 import logging
-from pathlib import Path
 
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
@@ -56,7 +52,7 @@ class ToshiClientBase(object):
           with_schema_validation (bool, optional): Validate client calls before dispatch
           headers (Dict, optional): custom headers (e.g. x-api-key)
         """
-        if headers == None:
+        if headers is None:
             headers = {"Authorization": "Bearer %s" % auth_token}
 
         transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
