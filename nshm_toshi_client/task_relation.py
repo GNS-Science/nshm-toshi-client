@@ -10,7 +10,7 @@ class TaskRelation(ToshiClientBase):
         mutation (
             $parent_id:ID!
             $child_id:ID!
-        	) {
+            ) {
               create_task_relation(
                 child_id:$child_id
                 parent_id:$parent_id

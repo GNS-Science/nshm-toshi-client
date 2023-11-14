@@ -6,7 +6,7 @@ import os
 from hashlib import md5
 
 import requests
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util import Retry
 
 from .timeout_http_adapter import TimeoutHTTPAdapter
 from .toshi_client_base import ToshiClientBase, kvl_to_graphql
@@ -23,7 +23,7 @@ retry_strategy = Retry(
     total=6,
     backoff_factor=5,
     status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"],
+    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"],
 )
 
 # Mount it for both http and https usage
@@ -115,9 +115,9 @@ class ToshiFile(ToshiClientBase):
               file_name
               file_size
               meta {k v}
-              
+
              #FILE_URL
-             
+
             }
           }
         }'''

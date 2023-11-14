@@ -1,10 +1,4 @@
-# from gql import gql
-import base64
-import json
-from hashlib import md5
 from pathlib import PurePath
-
-import requests
 
 from nshm_toshi_client.toshi_file import ToshiFile
 from nshm_toshi_client.toshi_task_file import ToshiTaskFile
