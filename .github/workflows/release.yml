@@ -56,6 +56,10 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Build wheels and source tarball
+        run:
+          poetry build
+
       - name: create github release
         id: create_release
         uses: GNS-Science/action-gh-release@master
