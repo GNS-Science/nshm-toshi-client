@@ -12,8 +12,8 @@ jobs:
 
     strategy:
       matrix:
-        python-versions: [3.9]
-        os: [ubuntu-latest]
+        python-versions: [3.9, "3.10"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          poetry install --no-interaction --no-root --with dev --all-extras
+          poetry install --no-interaction --with dev --all-extras
           poetry add tox-gh-actions
 
       - name: test with tox (uses tox-gh-actions to select correct environment)
