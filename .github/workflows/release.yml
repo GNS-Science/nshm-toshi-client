@@ -9,19 +9,20 @@ on:
     tags:
       - 'v*'
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "release"
+  # Allows you to run this workflow manually from the Actions tab
+  call-test-workflow:
+    #https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
+    uses: ./.github/workflows/run-tests.yml
+
   release:
     name: Create Release
+    needs: call-test-workflow
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-versions: [3.9, "3.10"]
+        python-versions: ["3.9", "3.10"]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -32,24 +33,26 @@ jobs:
         shell: bash
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Changelog Entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@v2
+        uses: GNS-Science/changelog-reader-action@master
         with:
           validation_depth: 10
           version: ${{ steps.tag_name.outputs.current_version }}
           path: ./CHANGELOG.md
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-versions }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install poetry
+      - name: Install and configure Poetry
+        uses: GNS-Science/install-poetry@main
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
       - name: build documentation
         run: |
@@ -72,7 +75,7 @@ jobs:
 
       - name: create github release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: GNS-Science/action-gh-release@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
