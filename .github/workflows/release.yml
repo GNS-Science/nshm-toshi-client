@@ -59,11 +59,9 @@ jobs:
           poetry install -E doc
           poetry run mkdocs build
 
-      - name: publish documentation
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
-          publish_dir: ./site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
 
       - name: Build wheels and source tarball
         run: >-
