@@ -1,0 +1,94 @@
+query FileDetailsQuery($id: ID!) {
+    node(id: $id) {
+      __typename
+      id
+      ... on FileInterface {
+        file_name
+        file_size
+        # file_url
+        md5_digest
+        meta {
+          k
+          v
+        }
+      }
+      ... on InversionSolutionNrml {
+        created
+        source_solution {
+          ... on AggregateInversionSolution {
+            id
+          }
+          ... on InversionSolution {
+            id
+          }
+          ... on ScaledInversionSolution {
+            id
+          }
+          ... on TimeDependentInversionSolution {
+            id
+          }
+        }
+      }
+    }
+  }
+
+     query one_general ($id:ID!)  {
+              node(id: $id) {
+                __typename
+                ... on GeneralTask {
+                  title
+                  created
+                  children {
+                    #total_count
+                    edges {
+                      node {
+                        child {
+                          __typename
+                          ... on Node {
+                            id
+                          }
+                          ... on RuptureGenerationTask {
+                            created
+                            state
+
+                            result
+                            arguments {k v}
+                            files {
+                              #total_count
+                              edges {
+                                node {
+                                  role
+                                  file {
+                                    ... on File {
+                                      id
+                                      file_name
+                                      file_size
+                                      meta {k v}
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+mutation CreateGeneralTask($created:DateTime!, $agent_name:String!, $title:String!, $description:String!) {
+  create_general_task (
+    input: {
+      created: $created
+      agent_name: $agent_name
+      title: $title
+      description: $description
+    })
+    {
+      general_task {
+        id
+        }
+    }
+}
