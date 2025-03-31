@@ -1,0 +1,33 @@
+query FileDetailsQuery($id: ID!) {
+    node(id: $id) {
+      __typename
+      id
+      ... on FileInterface {
+        file_name
+        file_size
+        # file_url
+        md5_digest
+        meta {
+          k
+          v
+        }
+      }
+      ... on InversionSolutionNrml {
+        created
+        source_solution {
+          ... on AggregateInversionSolution {
+            id
+          }
+          ... on InversionSolution {
+            id
+          }
+          ... on ScaledInversionSolution {
+            id
+          }
+          ... on TimeDependentInversionSolution {
+            id
+          }
+        }
+      }
+    }
+  }

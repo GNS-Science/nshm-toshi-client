@@ -1,0 +1,45 @@
+    query one_general ($id:ID!)  {
+              node(id: $id) {
+                __typename
+                ... on GeneralTask {
+                  title
+                  created
+                  children {
+                    #total_count
+                    edges {
+                      node {
+                        child {
+                          __typename
+                          ... on Node {
+                            id
+                          }
+                          ... on RuptureGenerationTask {
+                            created
+                            state
+
+                            result
+                            arguments {k v}
+                            files {
+                              #total_count
+                              edges {
+                                node {
+                                  role
+                                  file {
+                                    ... on File {
+                                      id
+                                      file_name
+                                      file_size
+                                      meta {k v}
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
