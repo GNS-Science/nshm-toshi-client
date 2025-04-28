@@ -13,10 +13,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Allows you to run this workflow manually from the Actions tab
   call-test-workflow:
-    #https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: ./.github/workflows/run-tests.yml
+    uses: GNS-Science/nshm-github-actions/.github/workflows/python-run-tests.yml@main
+    with:
+      operating-systems: "['ubuntu-latest', 'macos-latest', 'windows-latest']"
+      python-versions: "['3.9', '3.10']"
+      coverage: false
+    secrets: inherit
 
   release:
     name: Create Release
