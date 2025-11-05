@@ -1,22 +1,33 @@
-[tool.poetry]
+[project]
 name = "nshm-toshi-client"
 version = "1.0.1"
 description = "client for toshi API"
-authors = ["Chris Chamberlain <chrisbc@artisan.co.nz>"]
+authors = [
+    { name = "Chris B Chamberlain", email = "chrisbc@artisan.co.nz" },
+    {name="NSHM Compute Working Group", email="nshm@gns.cri.nz"}    
+]
 readme="README.md"
-license = "GNU Affero V3"
+license = "AGPL-3.0-or-later"
+classifiers=[
+    'Development Status :: 2 - Pre-Alpha',
+    'Intended Audience :: Developers',
+    'Natural Language :: English',
+    'Programming Language :: Python :: 3',
+]
+requires-python = ">=3.10,<4.0"
+
+dependencies = [
+  "requests (>=2.27.1)",
+  "graphql-core (>=3.2.1)",
+  "async-timeout (>=4.0.2)",
+  "gql (>=4.0.0)",
+]
+[tool.poetry]
 
 packages = [
 	{ include = "nshm_toshi_client" },
 	{ include = "tests", format = "sdist" }
 ]
-
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-requests = "^2.27.1"
-graphql-core = "^3.2.1"
-async-timeout = "^4.0.2"
-gql = {extras = ["requests", "aiohttp"], version = "^3.4.1"}
 
 [tool.poetry.group.dev.dependencies]
 black  = { version = "^22.3"}
