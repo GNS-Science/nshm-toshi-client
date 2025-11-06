@@ -69,7 +69,7 @@ class ToshiClientBase(object):
         # if self._with_schema_validation:
         #     self._client.validate(gql_query)  # might throw graphql.error.base.GraphQLError
 
-        gql_query.ariable_values = variable_values or {}
+        gql_query.variable_values = variable_values or {}
         response = self._client.execute(gql_query)
 
         # logger.debug('response: %s', response)
