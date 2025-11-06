@@ -4,79 +4,25 @@ name: release & publish workflow
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push events but only for the master branch
+  # Triggers the workflow on push of version tag
   push:
     tags:
       - 'v*'
 
-      # Allows you to run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+
 jobs:
-  call-test-workflow:
-    uses: GNS-Science/nshm-github-actions/.github/workflows/python-run-tests.yml@main
+  release-and-distribute:
+    uses:  GNS-Science/nshm-github-actions/.github/workflows/python-release.yml@main
     with:
-      operating-systems: "['ubuntu-latest', 'macos-latest', 'windows-latest']"
-      python-versions: "['3.10', '3.11', '3.12']"
-      coverage: false
+      python-version:  '3.12'
     secrets: inherit
 
-  release:
-    name: Create Release
-    needs: call-test-workflow
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-versions: ["3.9", "3.10"]
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      - name: Get version from tag
-        id: tag_name
-        run: |
-          echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
-        shell: bash
-
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-
-      - name: Get Changelog Entry
-        id: changelog_reader
-        uses: GNS-Science/changelog-reader-action@master
-        with:
-          validation_depth: 10
-          version: ${{ steps.tag_name.outputs.current_version }}
-          path: ./CHANGELOG.md
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-versions }}
-
-      - name: Install and configure Poetry
-        uses: GNS-Science/install-poetry@main
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-
-      - name: Build wheels and source tarball
-        run:
-          poetry build
-
-      - name: create github release
-        id: create_release
-        uses: GNS-Science/action-gh-release@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          body: ${{ steps.changelog_reader.outputs.changes }}
-          files: dist/*.whl
-          draft: false
-          prerelease: false
-
-      - name: publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
+  deploy-docs:
+    uses:  GNS-Science/nshm-github-actions/.github/workflows/python-deploy-docs.yml@main
+    with:
+      python-version:  '3.12'
+      optional-dependency-groups: 'doc'
+    secrets: inherit
