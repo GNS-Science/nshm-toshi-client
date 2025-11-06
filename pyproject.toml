@@ -36,6 +36,9 @@ optional = true
 [tool.poetry.group.dev]
 optional = true
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [dependency-groups]
 doc = [
     "mkdocs (>=1.6.1)",
