@@ -68,7 +68,7 @@ class ToshiClientBase(object):
         # TODO: started asserting after update to v3.0+ gql
         # if self._with_schema_validation:
         #     self._client.validate(gql_query)  # might throw graphql.error.base.GraphQLError
-        
+
         gql_query.ariable_values = variable_values or {}
         response = self._client.execute(gql_query)
 

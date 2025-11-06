@@ -12,7 +12,4 @@ A python3 client for the nshm-toshi-api.
 * PyPI: <https://pypi.org/project/nshm-toshi-client/>
 * Free software: MIT
 
-## Features
-
-- TODO
 
