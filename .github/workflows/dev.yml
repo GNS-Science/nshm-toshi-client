@@ -1,8 +1,8 @@
 name: Dev workflow
 
 on:
-  schedule:
-    - cron:  '25 9 * * 0' # At 09:25 on Sunday
+  # schedule:
+  #  - cron:  '25 9 * * 0' # At 09:25 on Sunday
   pull_request:
     branches: [main, deploy-test]
 
