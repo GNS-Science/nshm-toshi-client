@@ -81,6 +81,8 @@ class RuptureGenerationTask(ToshiClientBase):
               create_rupture_generation_task (
                 input: {
                   created: $created
+                  task_type: $task_type
+                  model_type: $model_type
                   state:STARTED
                   result:UNDEFINED
 
