@@ -28,7 +28,11 @@ class RuptureGenerationTask(ToshiClientBase):
         return self.link_task_file(task_id, file_id, task_role)
 
     def get_example_create_variables(self):
-        return {"created": "2019-10-01T12:00Z"}
+        return {
+            "created": "2019-10-01T12:00Z",
+            "task_type": "SOME_TASK_TYPE",
+            "model_type": "SOME_MODEL_TYPE",
+        }
 
     def get_example_complete_variables(self):
         return {"task_id": "UnVwdHVyZUdlbmVyYXRpb25UYXNrOjA=", "duration": 600, "result": "SUCCESS", "state": "DONE"}
