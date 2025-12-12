@@ -1,6 +1,7 @@
 """Ensure that gql arguments are being handled."""
 
 import json
+
 import requests_mock
 
 from nshm_toshi_client.toshi_client_base import ToshiClientBase
