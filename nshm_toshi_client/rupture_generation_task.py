@@ -81,7 +81,7 @@ class RuptureGenerationTask(ToshiClientBase):
 
     def create_task(self, input_variables, arguments=None, environment=None):
         qry = '''
-            mutation create_task ($created:DateTime!) {
+            mutation create_task ($created: DateTime!, $task_type:TaskSubType!, $model_type:ModelType!) {
               create_rupture_generation_task (
                 input: {
                   created: $created
