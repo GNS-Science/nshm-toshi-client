@@ -85,6 +85,16 @@ class ToshiFile(ToshiClientBase):
         log.debug(f'response {response}')
         response.raise_for_status()
 
+    def upload_content_v2(self, post_url, post_data, filepath):
+        log.debug(f'upload_content() POST URL: {post_url}; PATH: {filepath}')
+        filedata = open(filepath, 'rb')
+        files = {'file': filedata}
+        log.debug(f'upload_content() _s3_url: {self._s3_url}')
+
+        response = requests.post(url=self._s3_url, data=post_data, files=files)
+        log.debug(f'response {response}')
+        response.raise_for_status()
+
     def get_download_url(self, id):
         qry = '''
         query download_file ($id:ID!) {

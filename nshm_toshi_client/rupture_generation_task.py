@@ -1,4 +1,11 @@
+import base64
+import json
+from datetime import datetime as dt
+from datetime import timezone
+from hashlib import md5
+from os import PathLike
 from pathlib import PurePath
+from typing import Optional
 
 from nshm_toshi_client.toshi_file import ToshiFile
 from nshm_toshi_client.toshi_task_file import ToshiTaskFile
@@ -11,6 +18,98 @@ class RuptureGenerationTask(ToshiClientBase):
         super(RuptureGenerationTask, self).__init__(toshi_api_url, auth_token, with_schema_validation, headers)
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
+
+    def upload_rupture_set(
+        self,
+        task_id: str,
+        filepath: str | PathLike,
+        fault_models: list[str],
+        arguments: Optional[dict] = None,
+        metrics: Optional[dict] = None,
+    ) -> str:
+        """Create an inversion solution object and, upload the file and link it to the task.
+
+        Args:
+            task_id: the RuptureGenerationTask id
+            filepath: path to the file to upload
+            fault_models: list of fault models used to generate the rupture set
+            arguments: arguments used to generate the rupture set
+            metrics: metrics to attach to the rupture set
+
+        Returns:
+            the created rupture set id
+        """
+        filepath = PurePath(filepath)
+        file_id, post_url, post_data = self._create_rupture_set(filepath, task_id, fault_models, arguments, metrics)
+        self.file_api.upload_content_v2(post_url, post_data, filepath)
+        self.task_file_api.create_task_file(task_id, file_id, 'WRITE')
+        return file_id
+
+    def _create_rupture_set(
+        self,
+        filepath: PurePath,
+        task_id: str,
+        fault_models: list[str],
+        arguments: Optional[dict] = None,
+        metrics: Optional[dict] = None,
+    ) -> tuple[str, str, str]:
+        qry = '''
+            mutation (
+                $md5_digest: String!,
+                $file_name: String!,
+                $file_size: BigInt!,
+                $produced_by: ID!
+                $arguments: [KeyValuePairInput],
+                $metrics: [KeyValuePairInput],
+                $created: DateTime!
+                $fault_models: [String]!
+            ) {
+              create_rupture_set(input: {
+                md5_digest: $md5_digest
+                file_name: $file_name
+                file_size: $file_size
+                produced_by: $produced_by
+                created: $created
+                fault_models: $fault_models
+
+                ##METRICS##
+
+                ##ARGUMENTS##
+
+                  }
+              ) {
+              rupture_set { id, post_url_v2, post_data_v2 }
+              }
+            }
+        '''
+        if arguments:
+            qry = qry.replace("##ARGUMENTS##", kvl_to_graphql('arguments', arguments))
+        if metrics:
+            qry = qry.replace("##METRICS##", kvl_to_graphql('metrics', metrics))
+
+        filedata = open(filepath, 'rb')
+        digest = base64.b64encode(md5(filedata.read()).digest()).decode()
+
+        filedata.seek(0)  # important!
+        size = len(filedata.read())
+        filedata.close()
+
+        created = dt.now(timezone.utc).isoformat() + 'Z'
+        variables = dict(
+            md5_digest=digest,
+            file_name=filepath.parts[-1],
+            file_size=size,
+            produced_by=task_id,
+            created=created,
+            fault_models=fault_models,
+        )
+
+        executed = self.run_query(qry, variables)
+        rupture_set_id = executed['create_rupture_set']['rupture_set']['id']
+        post_url = json.loads(executed['create_rupture_set']['rupture_set']['post_url_v2'])
+        post_data = json.loads(executed['create_rupture_set']['rupture_set']['post_data_v2'])
+
+        return (rupture_set_id, post_url, post_data)
 
     def upload_file(self, filepath, meta=None):
         filepath = PurePath(filepath)
