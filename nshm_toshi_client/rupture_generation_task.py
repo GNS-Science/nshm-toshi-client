@@ -59,8 +59,6 @@ class RuptureGenerationTask(ToshiClientBase):
                 $file_name: String!,
                 $file_size: BigInt!,
                 $produced_by: ID!
-                $arguments: [KeyValuePairInput],
-                $metrics: [KeyValuePairInput],
                 $created: DateTime!
                 $fault_models: [String]!
             ) {
