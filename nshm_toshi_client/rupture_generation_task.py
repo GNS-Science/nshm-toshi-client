@@ -92,7 +92,7 @@ class RuptureGenerationTask(ToshiClientBase):
         size = len(filedata.read())
         filedata.close()
 
-        created = dt.now(timezone.utc).isoformat() + 'Z'
+        created = dt.now(timezone.utc).replace(tzinfo=None).isoformat()
         variables = dict(
             md5_digest=digest,
             file_name=filepath.parts[-1],
