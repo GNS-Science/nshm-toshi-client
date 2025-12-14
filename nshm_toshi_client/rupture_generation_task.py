@@ -104,7 +104,7 @@ class RuptureGenerationTask(ToshiClientBase):
 
         executed = self.run_query(qry, variables)
         rupture_set_id = executed['create_rupture_set']['rupture_set']['id']
-        post_url = json.loads(executed['create_rupture_set']['rupture_set']['post_url_v2'])
+        post_url = executed['create_rupture_set']['rupture_set']['post_url_v2']
         post_data = json.loads(executed['create_rupture_set']['rupture_set']['post_data_v2'])
 
         return (rupture_set_id, post_url, post_data)
