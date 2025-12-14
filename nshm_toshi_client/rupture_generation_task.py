@@ -24,7 +24,7 @@ class RuptureGenerationTask(ToshiClientBase):
         task_id: str,
         filepath: str | PathLike,
         fault_models: list[str],
-        arguments: Optional[dict] = None,
+        meta: Optional[dict] = None,
         metrics: Optional[dict] = None,
     ) -> str:
         """Create an inversion solution object and, upload the file and link it to the task.
@@ -33,14 +33,14 @@ class RuptureGenerationTask(ToshiClientBase):
             task_id: the RuptureGenerationTask id
             filepath: path to the file to upload
             fault_models: list of fault models used to generate the rupture set
-            arguments: arguments used to generate the rupture set
+            meta: meta data (typically task arguments) used to generate the rupture set
             metrics: metrics to attach to the rupture set
 
         Returns:
             the created rupture set id
         """
         filepath = PurePath(filepath)
-        file_id, post_url, post_data = self._create_rupture_set(filepath, task_id, fault_models, arguments, metrics)
+        file_id, post_url, post_data = self._create_rupture_set(filepath, task_id, fault_models, meta, metrics)
         self.file_api.upload_content_v2(post_url, post_data, filepath)
         self.task_file_api.create_task_file(task_id, file_id, 'WRITE')
         return file_id
@@ -50,7 +50,7 @@ class RuptureGenerationTask(ToshiClientBase):
         filepath: PurePath,
         task_id: str,
         fault_models: list[str],
-        arguments: Optional[dict] = None,
+        meta: Optional[dict] = None,
         metrics: Optional[dict] = None,
     ) -> tuple[str, str, str]:
         qry = '''
@@ -72,7 +72,7 @@ class RuptureGenerationTask(ToshiClientBase):
 
                 ##METRICS##
 
-                ##ARGUMENTS##
+                ##META##
 
                   }
               ) {
@@ -80,8 +80,8 @@ class RuptureGenerationTask(ToshiClientBase):
               }
             }
         '''
-        if arguments:
-            qry = qry.replace("##ARGUMENTS##", kvl_to_graphql('arguments', arguments))
+        if meta:
+            qry = qry.replace("##META##", kvl_to_graphql('arguments', meta))
         if metrics:
             qry = qry.replace("##METRICS##", kvl_to_graphql('metrics', metrics))
 

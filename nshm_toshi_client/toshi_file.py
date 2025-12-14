@@ -87,7 +87,7 @@ class ToshiFile(ToshiClientBase):
 
     def upload_content_v2(self, post_url: str, post_data: dict, filepath: str | os.PathLike):
         """Upload a blob to S3.
-        
+
         Args:
             post_url: The URL to post a file to S3.
             post_data: The data to post a file to S3.
