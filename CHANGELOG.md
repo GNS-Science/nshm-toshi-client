@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-12
+### Added
+ - `model_type` and `task_type` arguments to `RuptureGenerationTask.create_task` for compatibility with toshi-api 0.5.1
+ - create and upload `RuptureSet`
+ - `upload_content_v2` uses toshi-API `post_url_v2` and `post_data_v2`
+
+### Changed
+ - Updated vulnerable dependencies 
+
+### Removed
+ - Removed un-used dependencies
+
+
 ## [1.0.2] - 2025-11-06
 
 ### Changes
