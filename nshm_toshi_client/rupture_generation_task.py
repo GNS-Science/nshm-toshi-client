@@ -81,7 +81,7 @@ class RuptureGenerationTask(ToshiClientBase):
             }
         '''
         if meta:
-            qry = qry.replace("##META##", kvl_to_graphql('arguments', meta))
+            qry = qry.replace("##META##", kvl_to_graphql('meta', meta))
         if metrics:
             qry = qry.replace("##METRICS##", kvl_to_graphql('metrics', metrics))
 
