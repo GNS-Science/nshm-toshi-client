@@ -3,6 +3,9 @@ import logging
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
+from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager
+from nshm_toshi_client.config import COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,19 +46,39 @@ def kvl_to_graphql(field_name, kvl_as_dict):
 
 
 class ToshiClientBase:
-    def __init__(self, url, auth_token, with_schema_validation=True, headers=None, retries=6, timeout=None):
+    def __init__(
+        self,
+        url,
+        auth_token,
+        with_schema_validation=True,
+        headers=None,
+        retries=6,
+        timeout=None,
+        token_manager: ToshiTokenManager | None = None,
+    ):
         """Summary
 
         Args:
           url (String): Toshi API service URL
-          auth_token (String): JWT
+          auth_token (String): JWT (static; use token_manager for long-running jobs)
           with_schema_validation (bool, optional): Validate client calls before dispatch
           headers (Dict, optional): custom headers (e.g. x-api-key)
+          token_manager (ToshiTokenManager, optional): explicit M2M token manager; if omitted
+            and NZSHM22_TOSHI_COGNITO_* env vars are set, one is created automatically
         """
-        if headers is None:
-            headers = {"Authorization": f"Bearer {auth_token}"}
+        if token_manager is None and COGNITO_CLIENT_ID and COGNITO_CLIENT_SECRET and COGNITO_DOMAIN:
+            logger.debug("ToshiClientBase: auto-configuring M2M token manager from env vars")
+            token_manager = ToshiTokenManager(COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN)
 
-        transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
+        if token_manager is not None:
+            transport = RequestsHTTPTransport(
+                url=url, auth=ToshiM2MAuth(token_manager), use_json=True, retries=retries, timeout=timeout
+            )
+        else:
+            if headers is None:
+                headers = {"Authorization": f"Bearer {auth_token}"}
+            transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
+
         self._client = Client(transport=transport, fetch_schema_from_transport=with_schema_validation)
         self._with_schema_validation = with_schema_validation
 
