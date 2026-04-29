@@ -12,7 +12,6 @@ S3_URL = "https://some-tosh-api.com/"
 
 def test_create_rupture_generation_task():
     with requests_mock.Mocker() as mocker:
-
         query_server_answer = '''
             {"data":
                 {"create_rupture_generation_task":

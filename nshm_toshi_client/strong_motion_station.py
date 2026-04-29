@@ -10,7 +10,7 @@ from .toshi_client_base import ToshiClientBase
 
 class StrongMotionStation(ToshiClientBase):
     def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None):
-        super(StrongMotionStation, self).__init__(toshi_api_url, auth_token, with_schema_validation, headers)
+        super().__init__(toshi_api_url, auth_token, with_schema_validation, headers)
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         # self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
 
@@ -77,7 +77,7 @@ class StrongMotionStation(ToshiClientBase):
         if not values.keys() == valid_keys:
             diffs = set(valid_keys).difference(set(values.keys()))
             missing_keys = ", ".join(diffs)
-            raise ValueError(" mutation variables must contain keys: %s" % missing_keys)
+            raise ValueError(f" mutation variables must contain keys: {missing_keys}")
 
     # def complete_task(self, input_variables):
     #     qry = '''

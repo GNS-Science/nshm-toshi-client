@@ -13,7 +13,7 @@ def clean_string(original_string):
     return (
         original_string.encode('utf-8')
         .replace(b"\\", b"\\\\")
-        .replace(b"\"", b'\\\"')
+        .replace(b"\"", b'\\"')
         .replace(b"\n", b"\\n")
         .replace(b"\t", b"\\t")
         .replace(b"\r", b"\\r")
@@ -35,14 +35,14 @@ def attributes_as_str(attributes=None):
 
 def kvl_to_graphql(field_name, kvl_as_dict):
     assert isinstance(kvl_as_dict, dict)
-    value = "%s: [\n" % field_name
+    value = f"{field_name}: [\n"
     for k, v in kvl_as_dict.items():
-        value += '{k: "%s" v: "%s" }\n' % (k, v)
+        value += f'{{k: "{k}" v: "{v}" }}\n'
     value += "]"
     return value
 
 
-class ToshiClientBase(object):
+class ToshiClientBase:
     def __init__(self, url, auth_token, with_schema_validation=True, headers=None, retries=6, timeout=None):
         """Summary
 
@@ -53,7 +53,7 @@ class ToshiClientBase(object):
           headers (Dict, optional): custom headers (e.g. x-api-key)
         """
         if headers is None:
-            headers = {"Authorization": "Bearer %s" % auth_token}
+            headers = {"Authorization": f"Bearer {auth_token}"}
 
         transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
         self._client = Client(transport=transport, fetch_schema_from_transport=with_schema_validation)
