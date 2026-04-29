@@ -35,7 +35,7 @@ doc = [
     "mkdocs-pymdownx-material-extras>=2.5.6",
     "mkdocs",
     "mkdocstrings>=0.26.2",
-    "mkdocstrings-python>=1.18.2,<2.0.0",
+    "mkdocstrings-python>=2.0.3",
 ]
 dev = [
     "bump2version>=1.0.1",
