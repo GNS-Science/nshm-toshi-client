@@ -12,7 +12,6 @@ S3_URL = "https://some-tosh-api.com/"
 
 def test_query_without_args():
     with requests_mock.Mocker() as m:
-
         query = 'query {about}'
         server_response = '{"data":{"about": "hello world"}}'
         m.post(API_URL, text=server_response)
@@ -27,7 +26,6 @@ def test_query_without_args():
 
 def test_query_with_args():
     with requests_mock.Mocker() as m:
-
         query = """
             query getContinentName ($code: ID!) {
                 continent (code: $code) {

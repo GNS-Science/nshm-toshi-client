@@ -55,11 +55,11 @@ Ready to contribute? Here's how to set up `deluge-cmd` for local development.
     $ git clone git@github.com:your_name_here/deluge-cmd.git
     ```
 
-3. Ensure [poetry](https://python-poetry.org/docs/) is installed.
+3. Ensure [uv](https://docs.astral.sh/uv/) is installed.
 4. Install dependencies and start your virtualenv:
 
     ```
-    $ poetry install -E test -E doc -E dev
+    $ uv sync --all-groups --all-extras
     ```
 
 5. Create a branch for local development:
@@ -74,7 +74,7 @@ Ready to contribute? Here's how to set up `deluge-cmd` for local development.
    tests, including testing other Python versions, with tox:
 
     ```
-    $ poetry run tox
+    $ uv run tox
     ```
 
    The flake8 linter will complain if your docstrings don't follow [the google docstrings style](https://gist.github.com/redlotus/3bc387c2591e3e908c9b63b97b11d24e).
@@ -104,7 +104,7 @@ Before you submit a pull request, check that it meets these guidelines:
 ## Tips
 
 ```
-$ poetry run pytest tests -k create_file
+$ uv run pytest tests -k create_file
 ```
 
 To run a subset of tests.
@@ -117,7 +117,7 @@ Make sure all your changes are committed (including an entry in CHANGELOG.md).
 Then run:
 
 ```
-$ poetry run bump2version patch # possible: major / minor / patch
+$ uv run bump2version patch # possible: major / minor / patch
 $ git push
 $ git push --tags
 ```

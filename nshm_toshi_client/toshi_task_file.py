@@ -3,7 +3,7 @@ from .toshi_client_base import ToshiClientBase
 
 class ToshiTaskFile(ToshiClientBase):
     def __init__(self, url, auth_token, with_schema_validation=True, headers=None):
-        super(ToshiTaskFile, self).__init__(url, auth_token, with_schema_validation, headers)
+        super().__init__(url, auth_token, with_schema_validation, headers)
 
     def create_task_file(self, task_id, file_id, role):
         qry = '''

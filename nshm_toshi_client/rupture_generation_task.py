@@ -5,7 +5,6 @@ from datetime import timezone
 from hashlib import md5
 from os import PathLike
 from pathlib import PurePath
-from typing import Optional
 
 from nshm_toshi_client.toshi_file import ToshiFile
 from nshm_toshi_client.toshi_task_file import ToshiTaskFile
@@ -15,7 +14,7 @@ from .toshi_client_base import ToshiClientBase, kvl_to_graphql
 
 class RuptureGenerationTask(ToshiClientBase):
     def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None):
-        super(RuptureGenerationTask, self).__init__(toshi_api_url, auth_token, with_schema_validation, headers)
+        super().__init__(toshi_api_url, auth_token, with_schema_validation, headers)
         self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
         self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
 
@@ -24,8 +23,8 @@ class RuptureGenerationTask(ToshiClientBase):
         task_id: str,
         filepath: str | PathLike,
         fault_models: list[str],
-        meta: Optional[dict] = None,
-        metrics: Optional[dict] = None,
+        meta: dict | None = None,
+        metrics: dict | None = None,
     ) -> str:
         """Create an inversion solution object and, upload the file and link it to the task.
 
@@ -50,8 +49,8 @@ class RuptureGenerationTask(ToshiClientBase):
         filepath: PurePath,
         task_id: str,
         fault_models: list[str],
-        meta: Optional[dict] = None,
-        metrics: Optional[dict] = None,
+        meta: dict | None = None,
+        metrics: dict | None = None,
     ) -> tuple[str, str, str]:
         qry = '''
             mutation (
@@ -139,7 +138,7 @@ class RuptureGenerationTask(ToshiClientBase):
         if not values.keys() == valid_keys:
             diffs = set(valid_keys).difference(set(values.keys()))
             missing_keys = ", ".join(diffs)
-            raise ValueError("complete_variables must contain keys: %s" % missing_keys)
+            raise ValueError(f"complete_variables must contain keys: {missing_keys}")
 
     def complete_task(self, input_variables, metrics=None):
         qry = '''

@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 class ToshiFile(ToshiClientBase):
     def __init__(self, url, s3_url, auth_token, with_schema_validation=True, headers=None):
-        super(ToshiFile, self).__init__(url, auth_token, with_schema_validation, headers)
+        super().__init__(url, auth_token, with_schema_validation, headers)
         self._s3_url = s3_url
 
     def create_file(self, filepath, meta=None):

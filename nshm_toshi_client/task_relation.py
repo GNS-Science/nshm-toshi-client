@@ -3,7 +3,7 @@ from .toshi_client_base import ToshiClientBase
 
 class TaskRelation(ToshiClientBase):
     def __init__(self, url, auth_token, with_schema_validation=True, headers=None):
-        super(TaskRelation, self).__init__(url, auth_token, with_schema_validation, headers)
+        super().__init__(url, auth_token, with_schema_validation, headers)
 
     def create_task_relation(self, parent_id, child_id):
         qry = '''

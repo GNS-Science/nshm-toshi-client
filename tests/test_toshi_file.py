@@ -21,10 +21,11 @@ S3_URL = "https://some-tosh-api.com/"
 class TestToshiFile(unittest.TestCase):
     def test_create_toshi_file_ok(self):
         with requests_mock.Mocker() as m:
-
             post_url = clean_string('{"acl": "public-read", "Content-MD5": "VXFQl5qqeuR/f4Yr4N0yQg=="}')
 
-            query1_server_answer = '{"data":{"create_file":{"file_result":{"id":"ABCD","post_url":"%s"}}}}' % post_url
+            query1_server_answer = (
+                f'{{"data":{{"create_file":{{"file_result":{{"id":"ABCD","post_url":"{post_url}"}}}}}}}}'
+            )
 
             m.post(API_URL, text=query1_server_answer)
             headers = {"x-api-key": "THE_API_KEY"}
@@ -41,10 +42,11 @@ class TestToshiFile(unittest.TestCase):
 
     def test_create_toshi_file_with_meta_ok(self):
         with requests_mock.Mocker() as m:
-
             post_url = clean_string('{"acl": "public-read", "Content-MD5": "VXFQl5qqeuR/f4Yr4N0yQg=="}')
 
-            query1_server_answer = '{"data":{"create_file":{"file_result":{"id":"ABCD","post_url":"%s"}}}}' % post_url
+            query1_server_answer = (
+                f'{{"data":{{"create_file":{{"file_result":{{"id":"ABCD","post_url":"{post_url}"}}}}}}}}'
+            )
 
             m.post(API_URL, text=query1_server_answer)
             headers = {"x-api-key": "THE_API_KEY"}
@@ -63,7 +65,6 @@ class TestToshiFile(unittest.TestCase):
 
     def test_get_file_ok(self):
         with requests_mock.Mocker() as m:
-
             query1_server_answer = '''{
                 "data": {
                     "node": {
@@ -89,7 +90,6 @@ class TestToshiFile(unittest.TestCase):
 
     def test_get_file_dowload_url_ok(self):
         with requests_mock.Mocker() as m:
-
             query1_server_answer = '''{
                 "data": {
                     "node": {
@@ -135,7 +135,6 @@ class TestToshiFile(unittest.TestCase):
     @mock.patch('nshm_toshi_client.toshi_file.requests.get', side_effect=mocked_requests_get)
     def test_download_file_ok(self, mock_get):
         with requests_mock.Mocker() as m:
-
             query1_server_answer = '''{
                 "data": {
                     "node": {
