@@ -24,6 +24,12 @@ dependencies = [
   "requests-toolbelt>=1.0.0,<2.0.0",
 ]
 
+[project.optional-dependencies]
+cli = ["boto3>=1.26", "click>=8.0", "python-dotenv>=1.0"]
+
+[project.scripts]
+toshi-auth = "nshm_toshi_client.cli:cli"
+
 [dependency-groups]
 doc = [
     "mkdocs>=1.6.1",

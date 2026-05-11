@@ -3,10 +3,13 @@ import json
 import logging
 import threading
 import time
+from pathlib import Path
 from urllib import parse
 from urllib import request as urllib_request
 
 from requests.auth import AuthBase
+
+CREDENTIALS_PATH = Path.home() / '.toshi' / 'credentials'
 
 logger = logging.getLogger(__name__)
 
@@ -79,3 +82,119 @@ class ToshiM2MAuth(AuthBase):
     def __call__(self, r):
         r.headers["Authorization"] = f"Bearer {self._manager.get_token()}"
         return r
+
+
+# ---------------------------------------------------------------------------
+# JWT helpers (no signature verification — authorizer does that)
+# ---------------------------------------------------------------------------
+
+
+def decode_jwt_payload(token: str) -> dict:
+    """Decode JWT payload without verifying signature (for display/expiry checks only)."""
+    parts = token.split('.')
+    if len(parts) != 3:
+        raise ValueError('Invalid JWT format')
+    payload_b64 = parts[1] + '=' * (4 - len(parts[1]) % 4)
+    return json.loads(base64.urlsafe_b64decode(payload_b64))
+
+
+def is_token_expired(token: str, buffer_seconds: int = 60) -> bool:
+    """Return True if token expires within buffer_seconds."""
+    try:
+        payload = decode_jwt_payload(token)
+        exp = payload.get('exp', 0)
+        return time.time() >= (exp - buffer_seconds)
+    except Exception:
+        return True
+
+
+# ---------------------------------------------------------------------------
+# Credential file helpers (~/.toshi/credentials)
+# ---------------------------------------------------------------------------
+
+
+def load_credentials() -> dict:
+    """Load saved credentials from ~/.toshi/credentials, or return {} if missing."""
+    if not CREDENTIALS_PATH.exists():
+        return {}
+    with open(CREDENTIALS_PATH) as f:
+        return json.load(f)
+
+
+def save_credentials(data: dict) -> None:
+    """Write credentials to ~/.toshi/credentials with restricted permissions."""
+    CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CREDENTIALS_PATH.parent.chmod(0o700)
+    with open(CREDENTIALS_PATH, 'w') as f:
+        json.dump(data, f, indent=2)
+    CREDENTIALS_PATH.chmod(0o600)
+
+
+# ---------------------------------------------------------------------------
+# Interactive/scientist auth (refresh_token grant via OAuth2 token endpoint)
+# ---------------------------------------------------------------------------
+
+
+class ToshiCredentialAuth(AuthBase):
+    """requests.AuthBase for interactive/scientist use.
+
+    Reads ~/.toshi/credentials (written by ``toshi-auth login``),
+    auto-refreshes via OAuth2 refresh_token grant when the access token
+    is within 60 seconds of expiry.
+
+    Thread-safe: a single instance can be shared across threads.
+    """
+
+    def __init__(self, cognito_domain: str, scientist_client_id: str):
+        self._domain = cognito_domain.rstrip('/')
+        if not self._domain.startswith('https://'):
+            self._domain = f'https://{self._domain}'
+        self._client_id = scientist_client_id
+        self._lock = threading.Lock()
+
+    def __call__(self, r):
+        r.headers["Authorization"] = f"Bearer {self._get_token()}"
+        return r
+
+    def _get_token(self) -> str:
+        with self._lock:
+            creds = load_credentials()
+            access_token = creds.get('access_token', '')
+            if not access_token:
+                raise RuntimeError(
+                    "No credentials found. Run: toshi-auth login"
+                )
+            if is_token_expired(access_token):
+                refresh_tok = creds.get('refresh_token', '')
+                if not refresh_tok:
+                    raise RuntimeError(
+                        "Token expired and no refresh token. Run: toshi-auth login"
+                    )
+                logger.debug("ToshiCredentialAuth: refreshing expired token")
+                creds = self._refresh(refresh_tok, creds)
+                save_credentials(creds)
+                access_token = creds['access_token']
+            return access_token
+
+    def _refresh(self, refresh_tok: str, creds: dict) -> dict:
+        body = parse.urlencode(
+            {
+                "grant_type": "refresh_token",
+                "client_id": self._client_id,
+                "refresh_token": refresh_tok,
+            }
+        ).encode()
+        req = urllib_request.Request(
+            f"{self._domain}/oauth2/token",
+            data=body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        resp = json.loads(urllib_request.urlopen(req).read())
+        creds['access_token'] = resp['access_token']
+        if 'id_token' in resp:
+            creds['id_token'] = resp['id_token']
+        creds['expires_at'] = time.time() + resp.get('expires_in', 3600)
+        if 'refresh_token' in resp:
+            creds['refresh_token'] = resp['refresh_token']
+        logger.debug("ToshiCredentialAuth: token refreshed, expires in %ss", resp.get('expires_in', 3600))
+        return creds

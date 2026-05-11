@@ -3,8 +3,13 @@ import logging
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager
-from nshm_toshi_client.config import COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN
+from nshm_toshi_client.auth import CREDENTIALS_PATH, ToshiCredentialAuth, ToshiM2MAuth, ToshiTokenManager
+from nshm_toshi_client.config import (
+    COGNITO_CLIENT_ID,
+    COGNITO_CLIENT_SECRET,
+    COGNITO_DOMAIN,
+    COGNITO_SCIENTIST_CLIENT_ID,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +79,10 @@ class ToshiClientBase:
             transport = RequestsHTTPTransport(
                 url=url, auth=ToshiM2MAuth(token_manager), use_json=True, retries=retries, timeout=timeout
             )
+        elif CREDENTIALS_PATH.exists() and COGNITO_DOMAIN and COGNITO_SCIENTIST_CLIENT_ID:
+            logger.debug("ToshiClientBase: auto-configuring interactive auth from ~/.toshi/credentials")
+            auth = ToshiCredentialAuth(COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID)
+            transport = RequestsHTTPTransport(url=url, auth=auth, use_json=True, retries=retries, timeout=timeout)
         else:
             if headers is None:
                 headers = {"Authorization": f"Bearer {auth_token}"}
