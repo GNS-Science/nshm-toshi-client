@@ -40,6 +40,7 @@ class ToshiTokenManager:
         with self._lock:
             if time.time() > self._expires_at - 60:
                 self._fetch()
+            assert self._token is not None
             return self._token
 
     def _fetch(self) -> None:
