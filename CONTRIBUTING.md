@@ -29,8 +29,8 @@ and "help wanted" is open to whoever wants to implement it.
 
 ### Write Documentation
 
-deluge-cmd could always use more documentation, whether as part of the
-official deluge-cmd docs, in docstrings, or even on the web in blog posts,
+nshm-toshi-client could always use more documentation, whether as part of the
+official nshm-toshi-client docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
 ### Submit Feedback
@@ -46,13 +46,13 @@ If you are proposing a feature:
 
 ## Get Started!
 
-Ready to contribute? Here's how to set up `deluge-cmd` for local development.
+Ready to contribute? Here's how to set up `nshm-toshi-client` for local development.
 
-1. Fork the `deluge-cmd` repo on GitHub.
+1. Fork the `nshm-toshi-client` repo on GitHub.
 2. Clone your fork locally
 
     ```
-    $ git clone git@github.com:your_name_here/deluge-cmd.git
+    $ git clone git@github.com:your_name_here/nshm-toshi-client.git
     ```
 
 3. Ensure [uv](https://docs.astral.sh/uv/) is installed.
@@ -97,7 +97,7 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.md.
-3. The pull request should work for Python 3.6, 3.7, 3.8 and 3.9. Check
+3. The pull request should work for Python 3.10+. Check
    https://github.com/gns-science/nshm-toshi-client/actions
    and make sure that the tests pass for all supported Python versions.
 
