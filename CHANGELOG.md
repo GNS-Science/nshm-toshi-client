@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `auth_token` is now optional across all client classes when using token manager or credential auth
 
 ### Changed
+- Updated usage docs with all three auth methods and CLI reference
+- Fixed stale cookiecutter placeholders in CONTRIBUTING.md and installation.md
+- Updated supported Python versions in CONTRIBUTING.md (3.10+)
+
+### Removed
+- Removed stale demo scripts
+- Removed implemented auth integration plan doc
+
+### Changed
 - migrated to uv, upgraded dependencies
 - deps: patch (5 pkgs), minor (10 pkgs), major: backrefs 6→7, cryptography 46→47, pandas-stubs 2→3
 
