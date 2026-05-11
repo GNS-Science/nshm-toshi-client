@@ -32,7 +32,7 @@ import configparser
 import json
 import os
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -272,7 +272,7 @@ def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi')
 
     creds = resp['Credentials']
     click.echo(f'  AccessKeyId: {creds["AccessKeyId"]}')
-    click.echo(f'  Expires: {datetime.fromtimestamp(creds["Expiration"] / 1000, tz=UTC).isoformat()}')
+    click.echo(f'  Expires: {datetime.fromtimestamp(creds["Expiration"] / 1000, tz=timezone.utc).isoformat()}')
 
     aws_credentials_path = Path.home() / '.aws' / 'credentials'
     aws_credentials_path.parent.mkdir(parents=True, exist_ok=True)
@@ -328,7 +328,7 @@ def login():
     click.echo(f'\nLogged in as: {payload.get("username") or payload.get("sub", "unknown")}')
     click.echo(f'Scopes: {payload.get("scope", "none")}')
     exp = payload.get('exp', 0)
-    click.echo(f'Expires: {datetime.fromtimestamp(exp, tz=UTC).isoformat()}')
+    click.echo(f'Expires: {datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()}')
     click.echo(f'\nToken saved to: {CREDENTIALS_PATH}')
 
 
@@ -387,13 +387,13 @@ def whoami():
     click.echo(f'Token use:      {payload.get("token_use", "n/a")}')
 
     exp = payload.get('exp', 0)
-    exp_dt = datetime.fromtimestamp(exp, tz=UTC)
+    exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
     status = 'EXPIRED' if expired else 'valid'
     click.echo(f'Expires:        {exp_dt.isoformat()} [{status}]')
 
     iat = payload.get('iat', 0)
     if iat:
-        iat_dt = datetime.fromtimestamp(iat, tz=UTC)
+        iat_dt = datetime.fromtimestamp(iat, tz=timezone.utc)
         click.echo(f'Issued at:      {iat_dt.isoformat()}')
 
     click.echo(f'\nGroups:         {payload.get("cognito:groups", [])}')
@@ -408,7 +408,7 @@ def m2m_token(raw):
 
     payload = decode_jwt_payload(access_token)
     exp = payload.get('exp', 0)
-    exp_dt = datetime.fromtimestamp(exp, tz=UTC)
+    exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
 
     click.echo(f'M2M token obtained. Expires: {exp_dt.isoformat()}', err=True)
     click.echo(f'Scopes: {payload.get("scope", "none")}', err=True)

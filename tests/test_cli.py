@@ -67,7 +67,10 @@ class TestLoadAuthConfig(unittest.TestCase):
             'NZSHM22_TOSHI_COGNITO_REGION': 'us-west-2',
             'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': 'us-west-2_FAKE',
         }
-        with patch.dict('os.environ', env):
+        with (
+            patch.dict('os.environ', env),
+            patch('nshm_toshi_client.cli.Path.home', return_value=Path('/nonexistent')),
+        ):
             import nshm_toshi_client.config as cfg
 
             importlib.reload(cfg)
