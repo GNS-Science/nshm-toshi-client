@@ -49,7 +49,7 @@ class ToshiClientBase:
     def __init__(
         self,
         url,
-        auth_token,
+        auth_token=None,
         with_schema_validation=True,
         headers=None,
         retries=6,
