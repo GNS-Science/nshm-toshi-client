@@ -77,7 +77,7 @@ Ready to contribute? Here's how to set up `deluge-cmd` for local development.
     $ uv run tox
     ```
 
-   The flake8 linter will complain if your docstrings don't follow [the google docstrings style](https://gist.github.com/redlotus/3bc387c2591e3e908c9b63b97b11d24e).
+   The ruff linter will complain if your docstrings don't follow [the google docstrings style](https://gist.github.com/redlotus/3bc387c2591e3e908c9b63b97b11d24e).
 
 7. Commit your changes and push your branch to GitHub:
 
