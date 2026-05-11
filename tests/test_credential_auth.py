@@ -2,6 +2,7 @@
 
 import base64
 import json
+import sys
 import time
 import unittest
 from pathlib import Path
@@ -72,8 +73,9 @@ class TestLoadSaveCredentials(unittest.TestCase):
 
             self.assertEqual(loaded["access_token"], "abc")
             self.assertEqual(loaded["refresh_token"], "xyz")
-            # Check file permissions (owner-only)
-            self.assertEqual(fake_path.stat().st_mode & 0o777, 0o600)
+            # Check file permissions (owner-only, not enforced on Windows)
+            if sys.platform != 'win32':
+                self.assertEqual(fake_path.stat().st_mode & 0o777, 0o600)
 
     def test_load_missing_file_returns_empty(self):
         fake_path = Path('/nonexistent/path/credentials')
