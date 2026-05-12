@@ -3,6 +3,7 @@ Toshi Auth CLI — scientist and automation token management.
 
 Usage:
     toshi-auth login         # Username/password login, saves token to ~/.toshi/credentials
+    toshi-auth logout        # Delete saved credentials
     toshi-auth token         # Print current Bearer token (auto-refresh)
     toshi-auth whoami        # Decode and display JWT claims
     toshi-auth m2m-token     # Client credentials flow for automation/Runzi
@@ -330,6 +331,16 @@ def login():
     exp = payload.get('exp', 0)
     click.echo(f'Expires: {datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()}')
     click.echo(f'\nToken saved to: {CREDENTIALS_PATH}')
+
+
+@cli.command()
+def logout():
+    """Delete the saved credentials at ~/.toshi/credentials."""
+    if CREDENTIALS_PATH.exists():
+        CREDENTIALS_PATH.unlink()
+        click.echo(f'Logged out. Removed {CREDENTIALS_PATH}')
+    else:
+        click.echo('Already logged out (no credentials file found).')
 
 
 @cli.command()

@@ -492,6 +492,32 @@ class TestLoginCommand(unittest.TestCase):
         self.assertEqual(saved['refresh_token'], 'refresh_tok')
 
 
+class TestLogoutCommand(unittest.TestCase):
+    def test_logout_removes_credentials_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            creds_path = Path(tmpdir) / 'credentials'
+            creds_path.write_text(json.dumps({'access_token': 'tok'}))
+
+            with patch('nshm_toshi_client.cli.CREDENTIALS_PATH', creds_path):
+                runner = CliRunner()
+                result = runner.invoke(cli, ['logout'])
+
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn('Logged out', result.output)
+            self.assertFalse(creds_path.exists())
+
+    def test_logout_when_not_logged_in(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            creds_path = Path(tmpdir) / 'credentials'
+
+            with patch('nshm_toshi_client.cli.CREDENTIALS_PATH', creds_path):
+                runner = CliRunner()
+                result = runner.invoke(cli, ['logout'])
+
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn('Already logged out', result.output)
+
+
 class TestAwsCredsCommand(unittest.TestCase):
     def test_aws_creds_not_logged_in(self):
         with (
