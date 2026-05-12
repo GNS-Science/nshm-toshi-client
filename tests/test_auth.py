@@ -10,20 +10,13 @@ import requests_mock
 from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager
 from nshm_toshi_client.toshi_client_base import ToshiClientBase
 
+from .conftest import mock_urlopen as _mock_urlopen
+
 COGNITO_DOMAIN = "https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com"
 CLIENT_ID = "test_client_id"
 CLIENT_SECRET = "test_client_secret"
 
 TOKEN_RESPONSE = json.dumps({"access_token": "fake.jwt.token", "expires_in": 3600}).encode()
-
-
-def _mock_urlopen(response_bytes=TOKEN_RESPONSE):
-    """Return a mock that urlopen() will return (supports context-manager use)."""
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = response_bytes
-    mock_resp.__enter__ = lambda s: s
-    mock_resp.__exit__ = MagicMock(return_value=False)
-    return mock_resp
 
 
 class TestToshiTokenManager(unittest.TestCase):

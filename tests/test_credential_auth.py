@@ -18,6 +18,8 @@ from nshm_toshi_client.auth import (
     save_credentials,
 )
 
+from .conftest import mock_urlopen as _mock_urlopen
+
 
 def _make_jwt(payload: dict) -> str:
     """Build a minimal unsigned JWT for testing."""
@@ -260,13 +262,6 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
             self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
 
 
-def _mock_urlopen():
-    """Return a mock that urlopen() will return — reused from test_auth.py."""
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps({"access_token": "fake.jwt.token", "expires_in": 3600}).encode()
-    mock_resp.__enter__ = lambda s: s
-    mock_resp.__exit__ = MagicMock(return_value=False)
-    return mock_resp
 
 
 if __name__ == "__main__":
