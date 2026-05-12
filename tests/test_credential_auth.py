@@ -199,5 +199,73 @@ class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
             importlib.reload(base)
 
 
+class TestSubclassKwargsPassthrough(unittest.TestCase):
+    """Verify subclasses forward **kwargs (e.g. token_manager) to ToshiClientBase."""
+
+    API_URL = "http://fake_api/graphql"
+    S3_URL = "https://fake-s3.com/"
+
+    def _make_token_manager(self):
+        from nshm_toshi_client.auth import ToshiTokenManager
+
+        mgr = ToshiTokenManager("cid", "csecret", "https://auth.example.com")
+        return mgr
+
+    def test_toshi_file_accepts_token_manager(self):
+        from nshm_toshi_client.toshi_file import ToshiFile
+
+        mgr = self._make_token_manager()
+        with patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()):
+            with requests_mock.Mocker() as m:
+                m.post(self.API_URL, json={"data": {"node": {"id": "abc"}}})
+                api = ToshiFile(self.API_URL, self.S3_URL, with_schema_validation=False, token_manager=mgr)
+                api.get_file("abc")
+
+            self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
+
+    def test_task_relation_accepts_token_manager(self):
+        from nshm_toshi_client.task_relation import TaskRelation
+
+        mgr = self._make_token_manager()
+        with patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()):
+            with requests_mock.Mocker() as m:
+                m.post(self.API_URL, json={"data": {"__typename": "QueryRoot"}})
+                api = TaskRelation(self.API_URL, with_schema_validation=False, token_manager=mgr)
+                api.run_query("{ __typename }")
+
+            self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
+
+    def test_general_task_accepts_token_manager(self):
+        from nshm_toshi_client.general_task import GeneralTask
+
+        mgr = self._make_token_manager()
+        with patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()):
+            with requests_mock.Mocker() as m:
+                m.post(self.API_URL, json={"data": {"__typename": "QueryRoot"}})
+                api = GeneralTask(self.API_URL, self.S3_URL, with_schema_validation=False, token_manager=mgr)
+                api.run_query("{ __typename }")
+
+            self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
+
+    def test_strong_motion_station_accepts_token_manager(self):
+        from nshm_toshi_client.strong_motion_station import StrongMotionStation
+
+        mgr = self._make_token_manager()
+        with patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()):
+            with requests_mock.Mocker() as m:
+                m.post(self.API_URL, json={"data": {"__typename": "QueryRoot"}})
+                api = StrongMotionStation(self.API_URL, self.S3_URL, with_schema_validation=False, token_manager=mgr)
+                api.run_query("{ __typename }")
+
+            self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
+
+
+def _mock_urlopen():
+    """Return a mock that urlopen() will return — reused from test_auth.py."""
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = json.dumps({"access_token": "fake.jwt.token", "expires_in": 3600}).encode()
+    return mock_resp
+
+
 if __name__ == "__main__":
     unittest.main()
