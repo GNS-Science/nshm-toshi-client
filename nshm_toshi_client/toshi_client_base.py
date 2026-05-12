@@ -85,6 +85,13 @@ class ToshiClientBase:
             transport = RequestsHTTPTransport(url=url, auth=auth, use_json=True, retries=retries, timeout=timeout)
         else:
             if headers is None:
+                if auth_token is None:
+                    raise ValueError(
+                        "No auth configured. Provide one of: "
+                        "token_manager, NZSHM22_TOSHI_COGNITO_* env vars, "
+                        "~/.toshi/credentials (toshi-auth login), "
+                        "auth_token=..., or custom headers=..."
+                    )
                 headers = {"Authorization": f"Bearer {auth_token}"}
             transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
 

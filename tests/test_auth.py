@@ -130,6 +130,32 @@ class TestToshiClientBaseWithTokenManager(unittest.TestCase):
         importlib.reload(cfg)
         importlib.reload(base)
 
+    def test_raises_when_no_auth_configured(self):
+        """Missing all auth paths should raise ValueError, not silently send 'Bearer None'."""
+        import nshm_toshi_client.config as cfg
+        import nshm_toshi_client.toshi_client_base as base
+
+        env = {
+            'NZSHM22_TOSHI_COGNITO_CLIENT_ID': '',
+            'NZSHM22_TOSHI_COGNITO_CLIENT_SECRET': '',
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+        }
+        with patch.dict('os.environ', env):
+            import importlib
+
+            importlib.reload(cfg)
+            importlib.reload(base)
+
+            with patch.object(base, 'CREDENTIALS_PATH') as mock_path:
+                mock_path.exists.return_value = False
+                with self.assertRaises(ValueError) as ctx:
+                    base.ToshiClientBase("http://fake/graphql", with_schema_validation=False)
+                self.assertIn("No auth configured", str(ctx.exception))
+
+        importlib.reload(cfg)
+        importlib.reload(base)
+
     def test_token_manager_injected_into_transport(self):
         API_URL = "http://fake_api/graphql"
 
