@@ -264,6 +264,8 @@ def _mock_urlopen():
     """Return a mock that urlopen() will return — reused from test_auth.py."""
     mock_resp = MagicMock()
     mock_resp.read.return_value = json.dumps({"access_token": "fake.jwt.token", "expires_in": 3600}).encode()
+    mock_resp.__enter__ = lambda s: s
+    mock_resp.__exit__ = MagicMock(return_value=False)
     return mock_resp
 
 

@@ -63,10 +63,11 @@ class ToshiTokenManager:
             },
         )
         logger.debug("ToshiTokenManager: fetching new M2M token from %s", self._domain)
-        resp = json.loads(urllib_request.urlopen(req).read())
-        self._token = resp["access_token"]
-        self._expires_at = time.time() + resp["expires_in"]
-        logger.debug("ToshiTokenManager: token acquired, expires in %ss", resp["expires_in"])
+        with urllib_request.urlopen(req) as resp:
+            data = json.loads(resp.read())
+        self._token = data["access_token"]
+        self._expires_at = time.time() + data["expires_in"]
+        logger.debug("ToshiTokenManager: token acquired, expires in %ss", data["expires_in"])
 
 
 class ToshiM2MAuth(AuthBase):
@@ -189,12 +190,13 @@ class ToshiCredentialAuth(AuthBase):
             data=body,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-        resp = json.loads(urllib_request.urlopen(req).read())
-        creds['access_token'] = resp['access_token']
-        if 'id_token' in resp:
-            creds['id_token'] = resp['id_token']
-        creds['expires_at'] = time.time() + resp.get('expires_in', 3600)
-        if 'refresh_token' in resp:
-            creds['refresh_token'] = resp['refresh_token']
-        logger.debug("ToshiCredentialAuth: token refreshed, expires in %ss", resp.get('expires_in', 3600))
+        with urllib_request.urlopen(req) as resp:
+            data = json.loads(resp.read())
+        creds['access_token'] = data['access_token']
+        if 'id_token' in data:
+            creds['id_token'] = data['id_token']
+        creds['expires_at'] = time.time() + data.get('expires_in', 3600)
+        if 'refresh_token' in data:
+            creds['refresh_token'] = data['refresh_token']
+        logger.debug("ToshiCredentialAuth: token refreshed, expires in %ss", data.get('expires_in', 3600))
         return creds

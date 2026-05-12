@@ -18,9 +18,11 @@ TOKEN_RESPONSE = json.dumps({"access_token": "fake.jwt.token", "expires_in": 360
 
 
 def _mock_urlopen(response_bytes=TOKEN_RESPONSE):
-    """Return a mock that urlopen() will return."""
+    """Return a mock that urlopen() will return (supports context-manager use)."""
     mock_resp = MagicMock()
     mock_resp.read.return_value = response_bytes
+    mock_resp.__enter__ = lambda s: s
+    mock_resp.__exit__ = MagicMock(return_value=False)
     return mock_resp
 
 
