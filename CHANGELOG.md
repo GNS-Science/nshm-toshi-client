@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `toshi-auth` CLI with commands: `login`, `token`, `whoami`, `m2m-token`, `aws-creds`
 - CLI available via optional extra: `pip install nshm-toshi-client[cli]`
 - `auth_token` is now optional across all client classes when using token manager or credential auth
+- Comprehensive test coverage for auth flows, CLI commands, and subclass kwargs passthrough
 
 ### Changed
 - Updated usage docs with all three auth methods and CLI reference
