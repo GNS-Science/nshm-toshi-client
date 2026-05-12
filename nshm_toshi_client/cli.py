@@ -272,7 +272,7 @@ def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi')
 
     creds = resp['Credentials']
     click.echo(f'  AccessKeyId: {creds["AccessKeyId"]}')
-    click.echo(f'  Expires: {datetime.fromtimestamp(creds["Expiration"] / 1000, tz=timezone.utc).isoformat()}')
+    click.echo(f'  Expires: {creds["Expiration"].astimezone(timezone.utc).isoformat()}')
 
     aws_credentials_path = Path.home() / '.aws' / 'credentials'
     aws_credentials_path.parent.mkdir(parents=True, exist_ok=True)

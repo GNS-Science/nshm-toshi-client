@@ -534,6 +534,40 @@ class TestAwsCredsCommand(unittest.TestCase):
         mock_get_aws.assert_called_once_with(FAKE_CONFIG, valid_token, 'myprofile')
         self.assertIn("AWS credentials saved", result.output)
 
+    def test_get_aws_credentials_happy_path(self):
+        from datetime import datetime, timezone
+
+        from nshm_toshi_client.cli import get_aws_credentials
+
+        config = {**FAKE_CONFIG, 'identity_pool_id': 'ap-southeast-2:fake-pool'}
+        expiration = datetime(2030, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+        mock_cognito_identity = MagicMock()
+        mock_cognito_identity.get_id.return_value = {'IdentityId': 'identity-1'}
+        mock_cognito_identity.get_credentials_for_identity.return_value = {
+            'Credentials': {
+                'AccessKeyId': 'AKIAFAKE',
+                'SecretKey': 'secret',
+                'SessionToken': 'session',
+                'Expiration': expiration,
+            }
+        }
+        mock_boto3 = MagicMock()
+        mock_boto3.client.return_value = mock_cognito_identity
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                patch.dict('sys.modules', {'boto3': mock_boto3}),
+                patch('nshm_toshi_client.cli.Path.home', return_value=Path(tmpdir)),
+            ):
+                profile = get_aws_credentials(config, 'fake-access-token', profile='toshi')
+
+            self.assertEqual(profile, 'toshi')
+            written = (Path(tmpdir) / '.aws' / 'credentials').read_text()
+            self.assertIn('[toshi]', written)
+            self.assertIn('aws_access_key_id = AKIAFAKE', written)
+            self.assertIn('aws_secret_access_key = secret', written)
+            self.assertIn('aws_session_token = session', written)
+
     def test_aws_creds_refreshes_expired_token(self):
         expired_token = _make_jwt({"exp": time.time() - 100})
         new_token = _make_jwt({"exp": time.time() + 3600})
