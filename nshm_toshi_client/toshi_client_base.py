@@ -72,6 +72,12 @@ class ToshiClientBase:
             and NZSHM22_TOSHI_COGNITO_* env vars are set, one is created automatically
         """
         if token_manager is None and COGNITO_CLIENT_ID and COGNITO_CLIENT_SECRET and COGNITO_DOMAIN:
+            if auth_token is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit auth_token ignored — NZSHM22_TOSHI_COGNITO_* env vars "
+                    "are set, so M2M auth is being used instead. Unset the env vars or pass "
+                    "token_manager=... to override."
+                )
             logger.debug("ToshiClientBase: auto-configuring M2M token manager from env vars")
             token_manager = ToshiTokenManager(COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN)
 
@@ -80,6 +86,12 @@ class ToshiClientBase:
                 url=url, auth=ToshiM2MAuth(token_manager), use_json=True, retries=retries, timeout=timeout
             )
         elif CREDENTIALS_PATH.exists() and COGNITO_DOMAIN and COGNITO_SCIENTIST_CLIENT_ID:
+            if auth_token is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit auth_token ignored — ~/.toshi/credentials exists, "
+                    "so interactive auth is being used instead. Run `toshi-auth logout` or pass "
+                    "headers=... to override."
+                )
             logger.debug("ToshiClientBase: auto-configuring interactive auth from ~/.toshi/credentials")
             auth = ToshiCredentialAuth(COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID)
             transport = RequestsHTTPTransport(url=url, auth=auth, use_json=True, retries=retries, timeout=timeout)

@@ -130,6 +130,37 @@ class TestToshiClientBaseWithTokenManager(unittest.TestCase):
         importlib.reload(cfg)
         importlib.reload(base)
 
+    def test_warns_when_env_vars_override_explicit_auth_token(self):
+        """Setting env vars should shadow auth_token but emit a warning so callers aren't surprised."""
+        API_URL = "http://fake_api/graphql"
+        env = {
+            'NZSHM22_TOSHI_COGNITO_CLIENT_ID': CLIENT_ID,
+            'NZSHM22_TOSHI_COGNITO_CLIENT_SECRET': CLIENT_SECRET,
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': COGNITO_DOMAIN,
+        }
+        with patch.dict('os.environ', env):
+            import importlib
+
+            import nshm_toshi_client.config as cfg
+            import nshm_toshi_client.toshi_client_base as base
+
+            importlib.reload(cfg)
+            importlib.reload(base)
+
+            with patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()):
+                with requests_mock.Mocker() as m:
+                    m.post(API_URL, json={"data": {"about": "test-api"}})
+                    with self.assertLogs("nshm_toshi_client.toshi_client_base", level="WARNING") as cm:
+                        base.ToshiClientBase(
+                            API_URL,
+                            auth_token="explicit-token",
+                            with_schema_validation=False,
+                        )
+                    self.assertTrue(any("auth_token ignored" in m for m in cm.output))
+
+        importlib.reload(cfg)
+        importlib.reload(base)
+
     def test_raises_when_no_auth_configured(self):
         """Missing all auth paths should raise ValueError, not silently send 'Bearer None'."""
         import nshm_toshi_client.config as cfg
