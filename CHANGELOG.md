@@ -10,15 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - M2M (machine-to-machine) JWT auth with transparent token refresh (`ToshiTokenManager`, `ToshiM2MAuth`)
 - Interactive/scientist auth with auto-refresh from `~/.toshi/credentials` (`ToshiCredentialAuth`)
 - `ToshiClientBase` auto-detects auth method from env vars or credentials file
-- `toshi-auth` CLI with commands: `login`, `token`, `whoami`, `m2m-token`, `aws-creds`
+- `toshi-auth` CLI with commands: `login`, `logout`, `token`, `whoami`, `m2m-token`, `aws-creds`
 - CLI available via optional extra: `pip install nshm-toshi-client[cli]`
 - `auth_token` is now optional across all client classes when using token manager or credential auth
 - Comprehensive test coverage for auth flows, CLI commands, and subclass kwargs passthrough
+
+### Fixed
+- Following external code review by @voj:
+  - `toshi-auth aws-creds`: handle `Expiration` as a `datetime` (boto3's actual return type) instead of treating it as epoch milliseconds — previously crashed with `TypeError` on first real use
+  - `ToshiTokenManager` and `ToshiCredentialAuth`: use `urlopen` as a context manager so HTTP responses are closed
+  - `ToshiClientBase`: raise `ValueError` when no auth path is configured instead of silently sending `Authorization: Bearer None`
+  - `ToshiClientBase`: emit a `logger.warning` when env-var or credentials-file auth shadows an explicit `auth_token`
 
 ### Changed
 - Updated usage docs with all three auth methods and CLI reference
 - Fixed stale cookiecutter placeholders in CONTRIBUTING.md and installation.md
 - Updated supported Python versions in CONTRIBUTING.md (3.10+)
+- Shared `_mock_urlopen` test helper moved to `tests/conftest.py`
 
 ### Removed
 - Removed stale demo scripts
