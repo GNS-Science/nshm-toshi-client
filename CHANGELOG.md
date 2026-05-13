@@ -15,26 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `auth_token` is now optional across all client classes when using token manager or credential auth
 - Comprehensive test coverage for auth flows, CLI commands, and subclass kwargs passthrough
 
-### Fixed
-- Following external code review by @voj:
-  - `toshi-auth aws-creds`: handle `Expiration` as a `datetime` (boto3's actual return type) instead of treating it as epoch milliseconds — previously crashed with `TypeError` on first real use
-  - `ToshiTokenManager` and `ToshiCredentialAuth`: use `urlopen` as a context manager so HTTP responses are closed
-  - `ToshiClientBase`: raise `ValueError` when no auth path is configured instead of silently sending `Authorization: Bearer None`
-  - `ToshiClientBase`: emit a `logger.warning` when env-var or credentials-file auth shadows an explicit `auth_token`
-
 ### Changed
 - Updated usage docs with all three auth methods and CLI reference
 - Fixed stale cookiecutter placeholders in CONTRIBUTING.md and installation.md
 - Updated supported Python versions in CONTRIBUTING.md (3.10+)
-- Shared `_mock_urlopen` test helper moved to `tests/conftest.py`
+- Migrated to uv, upgraded dependencies
+- Deps: patch (5 pkgs), minor (10 pkgs), major: backrefs 6→7, cryptography 46→47, pandas-stubs 2→3
 
 ### Removed
 - Removed stale demo scripts
 - Removed implemented auth integration plan doc
-
-### Changed
-- migrated to uv, upgraded dependencies
-- deps: patch (5 pkgs), minor (10 pkgs), major: backrefs 6→7, cryptography 46→47, pandas-stubs 2→3
 
 ## [1.1.1] - 2026-01-20
 ### Changed
