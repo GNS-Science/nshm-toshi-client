@@ -4,8 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
-- migrated to uv, upgraded dependencies
+## [1.2.0] - 2026-05-12
+
+### Added
+- M2M (machine-to-machine) JWT auth with transparent token refresh (`ToshiTokenManager`, `ToshiM2MAuth`)
+- Interactive/scientist auth with auto-refresh from `~/.toshi/credentials` (`ToshiCredentialAuth`)
+- `ToshiClientBase` auto-detects auth method from env vars or credentials file
+- `toshi-auth` CLI with commands: `login`, `logout`, `token`, `whoami`, `m2m-token`, `aws-creds`
+- CLI available via optional extra: `pip install nshm-toshi-client[cli]`
+- `auth_token` is now optional across all client classes when using token manager or credential auth
+- Comprehensive test coverage for auth flows, CLI commands, and subclass kwargs passthrough
+
+### Changed
+- Updated usage docs with all three auth methods and CLI reference
+- Fixed stale cookiecutter placeholders in CONTRIBUTING.md and installation.md
+- Updated supported Python versions in CONTRIBUTING.md (3.10+)
+- Migrated to uv, upgraded dependencies
+- Deps: patch (5 pkgs), minor (10 pkgs), major: backrefs 6→7, cryptography 46→47, pandas-stubs 2→3
+
+### Removed
+- Removed stale demo scripts
+- Removed implemented auth integration plan doc
 
 ## [1.1.1] - 2026-01-20
 ### Changed

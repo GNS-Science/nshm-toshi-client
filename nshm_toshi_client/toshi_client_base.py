@@ -3,6 +3,14 @@ import logging
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
+from nshm_toshi_client.auth import CREDENTIALS_PATH, ToshiCredentialAuth, ToshiM2MAuth, ToshiTokenManager
+from nshm_toshi_client.config import (
+    COGNITO_CLIENT_ID,
+    COGNITO_CLIENT_SECRET,
+    COGNITO_DOMAIN,
+    COGNITO_SCIENTIST_CLIENT_ID,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,19 +51,62 @@ def kvl_to_graphql(field_name, kvl_as_dict):
 
 
 class ToshiClientBase:
-    def __init__(self, url, auth_token, with_schema_validation=True, headers=None, retries=6, timeout=None):
+    def __init__(
+        self,
+        url,
+        auth_token=None,
+        with_schema_validation=True,
+        headers=None,
+        retries=6,
+        timeout=None,
+        token_manager: ToshiTokenManager | None = None,
+    ):
         """Summary
 
         Args:
           url (String): Toshi API service URL
-          auth_token (String): JWT
+          auth_token (String): JWT (static; use token_manager for long-running jobs)
           with_schema_validation (bool, optional): Validate client calls before dispatch
           headers (Dict, optional): custom headers (e.g. x-api-key)
+          token_manager (ToshiTokenManager, optional): explicit M2M token manager; if omitted
+            and NZSHM22_TOSHI_COGNITO_* env vars are set, one is created automatically
         """
-        if headers is None:
-            headers = {"Authorization": f"Bearer {auth_token}"}
+        if token_manager is None and COGNITO_CLIENT_ID and COGNITO_CLIENT_SECRET and COGNITO_DOMAIN:
+            if auth_token is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit auth_token ignored — NZSHM22_TOSHI_COGNITO_* env vars "
+                    "are set, so M2M auth is being used instead. Unset the env vars or pass "
+                    "token_manager=... to override."
+                )
+            logger.debug("ToshiClientBase: auto-configuring M2M token manager from env vars")
+            token_manager = ToshiTokenManager(COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN)
 
-        transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
+        if token_manager is not None:
+            transport = RequestsHTTPTransport(
+                url=url, auth=ToshiM2MAuth(token_manager), use_json=True, retries=retries, timeout=timeout
+            )
+        elif CREDENTIALS_PATH.exists() and COGNITO_DOMAIN and COGNITO_SCIENTIST_CLIENT_ID:
+            if auth_token is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit auth_token ignored — ~/.toshi/credentials exists, "
+                    "so interactive auth is being used instead. Run `toshi-auth logout` or pass "
+                    "headers=... to override."
+                )
+            logger.debug("ToshiClientBase: auto-configuring interactive auth from ~/.toshi/credentials")
+            auth = ToshiCredentialAuth(COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID)
+            transport = RequestsHTTPTransport(url=url, auth=auth, use_json=True, retries=retries, timeout=timeout)
+        else:
+            if headers is None:
+                if auth_token is None:
+                    raise ValueError(
+                        "No auth configured. Provide one of: "
+                        "token_manager, NZSHM22_TOSHI_COGNITO_* env vars, "
+                        "~/.toshi/credentials (toshi-auth login), "
+                        "auth_token=..., or custom headers=..."
+                    )
+                headers = {"Authorization": f"Bearer {auth_token}"}
+            transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
+
         self._client = Client(transport=transport, fetch_schema_from_transport=with_schema_validation)
         self._with_schema_validation = with_schema_validation
 

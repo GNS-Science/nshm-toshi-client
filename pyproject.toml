@@ -1,6 +1,6 @@
 [project]
 name = "nshm-toshi-client"
-version = "1.1.2"
+version = "1.2.0"
 description = "client for toshi API"
 authors = [
     { name = "Chris B Chamberlain", email = "chrisbc@artisan.co.nz" },
@@ -24,6 +24,12 @@ dependencies = [
   "requests-toolbelt>=1.0.0,<2.0.0",
 ]
 
+[project.optional-dependencies]
+cli = ["boto3>=1.26", "click>=8.0", "python-dotenv>=1.0"]
+
+[project.scripts]
+toshi-auth = "nshm_toshi_client.cli:cli"
+
 [dependency-groups]
 doc = [
     "mkdocs>=1.6.1",
@@ -41,7 +47,7 @@ dev = [
     "bump2version>=1.0.1",
     "ipython>=8.11.0",
     "mypy>=1.18.2",
-    "pandas-stubs==2.3.0.250703.*",
+    "pandas-stubs>=2.3.0",
     "pip-audit>=2.9.0",
     "pytest-cov>=2.12.0",
     "pytest-xdist>=3.5.0",
@@ -70,7 +76,7 @@ exclude-newer = "1 week"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "G004"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -80,3 +86,4 @@ quote-style = "preserve"
 
 [tool.mypy]
 ignore_missing_imports = true
+follow_untyped_imports = true

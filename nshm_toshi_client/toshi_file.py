@@ -35,8 +35,8 @@ log = logging.getLogger(__name__)
 
 
 class ToshiFile(ToshiClientBase):
-    def __init__(self, url, s3_url, auth_token, with_schema_validation=True, headers=None):
-        super().__init__(url, auth_token, with_schema_validation, headers)
+    def __init__(self, url, s3_url, auth_token=None, with_schema_validation=True, headers=None, **kwargs):
+        super().__init__(url, auth_token, with_schema_validation, headers, **kwargs)
         self._s3_url = s3_url
 
     def create_file(self, filepath, meta=None):
@@ -76,13 +76,13 @@ class ToshiFile(ToshiClientBase):
         return (executed['create_file']['file_result']['id'], post_url)
 
     def upload_content(self, post_url, filepath):
-        log.debug(f'upload_content() POST URL: {post_url}; PATH: {filepath}')
+        log.debug('upload_content() POST URL: %s; PATH: %s', post_url, filepath)
         filedata = open(filepath, 'rb')
         files = {'file': filedata}
-        log.debug(f'upload_content() _s3_url: {self._s3_url}')
+        log.debug('upload_content() _s3_url: %s', self._s3_url)
 
         response = requests.post(url=self._s3_url, data=post_url, files=files)
-        log.debug(f'response {response}')
+        log.debug('response %s', response)
         response.raise_for_status()
 
     def upload_content_v2(self, post_url: str, post_data: dict, filepath: str | os.PathLike):
@@ -93,13 +93,13 @@ class ToshiFile(ToshiClientBase):
             post_data: The data to post a file to S3.
             filepath: The path to the file to upload.
         """
-        log.debug(f'upload_content() POST URL: {post_url}; PATH: {filepath}')
+        log.debug('upload_content() POST URL: %s; PATH: %s', post_url, filepath)
         filedata = open(filepath, 'rb')
         files = {'file': filedata}
-        log.debug(f'upload_content() _s3_url: {self._s3_url}')
+        log.debug('upload_content() _s3_url: %s', self._s3_url)
 
         response = requests.post(url=self._s3_url, data=post_data, files=files)
-        log.debug(f'response {response}')
+        log.debug('response %s', response)
         response.raise_for_status()
 
     def get_download_url(self, id):

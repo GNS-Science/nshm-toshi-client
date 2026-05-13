@@ -7,10 +7,10 @@ from .toshi_client_base import ToshiClientBase
 
 
 class GeneralTask(ToshiClientBase):
-    def __init__(self, toshi_api_url, s3_url, auth_token, with_schema_validation=True, headers=None):
-        super().__init__(toshi_api_url, auth_token, with_schema_validation, headers)
-        self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers)
-        self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers)
+    def __init__(self, toshi_api_url, s3_url, auth_token=None, with_schema_validation=True, headers=None, **kwargs):
+        super().__init__(toshi_api_url, auth_token, with_schema_validation, headers, **kwargs)
+        self.file_api = ToshiFile(toshi_api_url, s3_url, auth_token, with_schema_validation, headers, **kwargs)
+        self.task_file_api = ToshiTaskFile(toshi_api_url, auth_token, with_schema_validation, headers, **kwargs)
 
     # def upload_file(self, filepath):
     #     filepath = PurePath(filepath)

@@ -1,32 +1,126 @@
 # Usage
 
-## Setup
+## Authentication
 
-Required env variables:
+There are three ways to authenticate with the Toshi API, listed in priority order.
+`ToshiClientBase` auto-detects the method based on what is configured.
 
+### 1. M2M (machine-to-machine) — for automation and batch jobs
+
+Set these env vars and the client configures itself automatically:
+
+```bash
+export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
+export NZSHM22_TOSHI_COGNITO_CLIENT_ID=your_client_id
+export NZSHM22_TOSHI_COGNITO_CLIENT_SECRET=your_client_secret
+export NZSHM22_TOSHI_COGNITO_DOMAIN=https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com
 ```
-NZSHM22_TOSHI_API_URL=https://example-api-url.com
-NZSHM22_TOSHI_API_KEY=example-api-key
-NZSHM22_TOSHI_S3_URL=https://example-s3-url.com
+
+```python
+from nshm_toshi_client import ToshiFile
+
+api = ToshiFile(
+    "https://example-api-url.com/graphql",
+    "https://example-s3-url.com",
+)
+file = api.get_file("{example_id}")
 ```
 
-contact @chrisbc for real urls/keys
+Tokens are cached and refreshed transparently — long-running jobs (24h+) never
+need to manage token lifetime.
+
+You can also pass a `ToshiTokenManager` explicitly:
+
+```python
+from nshm_toshi_client.auth import ToshiTokenManager
+from nshm_toshi_client import ToshiFile
+
+mgr = ToshiTokenManager(
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    cognito_domain="https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com",
+)
+api = ToshiFile(
+    "https://example-api-url.com/graphql",
+    "https://example-s3-url.com",
+    token_manager=mgr,
+)
+```
+
+### 2. Interactive credentials — for scientists
+
+First install the CLI and log in:
+
+```bash
+pip install nshm-toshi-client[cli]
+toshi-auth login
+```
+
+This saves tokens to `~/.toshi/credentials`. Then set these env vars:
+
+```bash
+export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
+export NZSHM22_TOSHI_COGNITO_DOMAIN=https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com
+export NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID=your_scientist_client_id
+```
+
+The client detects `~/.toshi/credentials` and refreshes tokens automatically:
+
+```python
+from nshm_toshi_client import ToshiFile
+
+api = ToshiFile(
+    "https://example-api-url.com/graphql",
+    "https://example-s3-url.com",
+)
+file = api.get_file("{example_id}")
+```
+
+### 3. API key (legacy)
+
+```bash
+export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
+export NZSHM22_TOSHI_API_KEY=your-api-key
+export NZSHM22_TOSHI_S3_URL=https://example-s3-url.com
+```
+
+```python
+from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
+
+headers = {"x-api-key": API_KEY}
+api = ToshiFile(API_URL, S3_URL, None, headers=headers)
+file = api.get_file("{example_id}")
+```
+
+## toshi-auth CLI
+
+Install with `pip install nshm-toshi-client[cli]`.
+
+The CLI reads config from `~/.toshi/auth_config.json`, or `TOSHI_COGNITO_CONFIG`
+env var pointing to a config file, or falls back to `NZSHM22_TOSHI_COGNITO_*` env vars.
+
+| Command | Description |
+|---------|-------------|
+| `toshi-auth login` | Username/password login, saves tokens to `~/.toshi/credentials` |
+| `toshi-auth token [--raw]` | Print current Bearer token, auto-refreshing if expired |
+| `toshi-auth whoami` | Decode and display JWT claims (user, scopes, expiry) |
+| `toshi-auth m2m-token [--raw]` | Obtain M2M token via client credentials grant |
+| `toshi-auth aws-creds [--profile]` | Exchange Cognito token for AWS STS credentials |
 
 ## Methods
 
-To use ToshiFile.get_file in a project
+### ToshiFile.get_file
 
+```python
+from nshm_toshi_client import ToshiFile
+
+api = ToshiFile(API_URL, S3_URL)
+file = api.get_file("{example_id}")
 ```
-from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
-headers={"x-api-key":API_KEY}
-api = ToshiFile(API_URL, None, None, headers=headers)
 
-file = api.get_file('{example_id}')
-```
+Example response:
 
-Example response
-
-```
+```python
 {'__typename': 'InversionSolutionNrml',
   'id': 'SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==',
   'file_name': 'NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip',
@@ -35,19 +129,15 @@ Example response
 }
 ```
 
-To use ToshiClient.get_file and get file_url in a project
+### ToshiFile.get_file_download_url
 
-```
-from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
-headers={"x-api-key":API_KEY}
-api = ToshiFile(API_URL, None, None, headers=headers)
-
-file = api.get_file_download_url('{example_id}', true)
+```python
+file = api.get_file_download_url("{example_id}", True)
 ```
 
-Example response
+Example response:
 
-```
+```python
 {'__typename': 'InversionSolutionNrml',
   'id': 'SW52ZXJzaW9uU29sdXRpb25Ocm1sOjEwMDM0Mw==',
   'file_name': 'NZSHM22_InversionSolution-QXV0b21hdGlvblRhc2s6MTAwMTA4_nrml.zip',
@@ -57,22 +147,17 @@ Example response
 }
 ```
 
-To use ToshiClient.download_file in a project
+### ToshiFile.download_file
 
-```
-from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
-headers={"x-api-key":API_KEY}
-api = ToshiFile(API_URL, None, None, headers=headers)
-
-example_file_path = 'usr/tmp'
-api.download_file('{example_id}', example_file_path)
+```python
+api.download_file("{example_id}", "/tmp/downloads")
 ```
 
 If successful, prints:
 
 ```
-saving to usr/tmp/{example_id}
-````
+saving to /tmp/downloads/{example_id}
+```
 
 If failure, prints:
 
