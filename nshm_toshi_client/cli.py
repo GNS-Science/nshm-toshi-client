@@ -32,6 +32,7 @@ import base64
 import configparser
 import json
 import os
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,6 +53,24 @@ try:
     load_dotenv()
 except ImportError:
     pass
+
+# boto3 is an optional dependency (cli extra). Import here so it lands in
+# sys.modules when available; callers fetch it via _get_boto3() so that
+# tests can inject a mock via patch.dict('sys.modules', {'boto3': ...}).
+try:
+    import boto3  # noqa: F401
+except ImportError:
+    pass
+
+
+def _get_boto3():
+    """Return the boto3 module, or raise a ClickException if unavailable."""
+    mod = sys.modules.get('boto3')
+    if mod is None:
+        raise click.ClickException(
+            "This command requires boto3. Install with: pip install nshm-toshi-client[cli]"
+        )
+    return mod
 
 
 # ---------------------------------------------------------------------------
@@ -129,12 +148,7 @@ def http_post_form(url: str, data: dict, auth: tuple[str, str] | None = None) ->
 
 def password_flow_login(config: dict) -> dict:
     """Authenticate with email + password via Cognito USER_PASSWORD_AUTH."""
-    try:
-        import boto3
-    except ImportError:
-        raise click.ClickException(
-            "Login requires boto3. Install with: pip install nshm-toshi-client[cli]"
-        ) from None
+    boto3 = _get_boto3()
 
     region = config['region']
     client_id = config['scientist_client_id']
@@ -171,12 +185,7 @@ def password_flow_login(config: dict) -> dict:
 
 def refresh_token(config: dict, refresh_tok: str) -> dict:
     """Use refresh token to get a new access token via Cognito InitiateAuth."""
-    try:
-        import boto3
-    except ImportError:
-        raise click.ClickException(
-            "Token refresh requires boto3. Install with: pip install nshm-toshi-client[cli]"
-        ) from None
+    boto3 = _get_boto3()
 
     region = config['region']
     client_id = config['scientist_client_id']
@@ -238,12 +247,7 @@ def client_credentials_flow(config: dict) -> str:
 
 def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi') -> str:
     """Exchange Cognito token for AWS STS credentials via Identity Pool."""
-    try:
-        import boto3
-    except ImportError:
-        raise click.ClickException(
-            "AWS credentials exchange requires boto3. Install with: pip install nshm-toshi-client[cli]"
-        ) from None
+    boto3 = _get_boto3()
 
     region = config['region']
     identity_pool_id = config.get('identity_pool_id')
