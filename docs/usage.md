@@ -102,6 +102,7 @@ env var pointing to a config file, or falls back to `NZSHM22_TOSHI_COGNITO_*` en
 | Command | Description |
 |---------|-------------|
 | `toshi-auth login` | Username/password login, saves tokens to `~/.toshi/credentials` |
+| `toshi-auth logout` | Delete saved credentials at `~/.toshi/credentials` |
 | `toshi-auth token [--raw]` | Print current Bearer token, auto-refreshing if expired |
 | `toshi-auth whoami` | Decode and display JWT claims (user, scopes, expiry) |
 | `toshi-auth m2m-token [--raw]` | Obtain M2M token via client credentials grant |
