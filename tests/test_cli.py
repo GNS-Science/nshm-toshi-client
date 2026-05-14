@@ -290,15 +290,17 @@ class TestClientCredentialsFlow(unittest.TestCase):
 
 class TestWhoamiCommand(unittest.TestCase):
     def test_whoami_displays_claims(self):
-        valid_token = _make_jwt({
-            "sub": "user-123",
-            "username": "scientist@example.com",
-            "iss": "https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
-            "scope": "openid email",
-            "token_use": "access",
-            "exp": int(time.time()) + 3600,
-            "iat": int(time.time()),
-        })
+        valid_token = _make_jwt(
+            {
+                "sub": "user-123",
+                "username": "scientist@example.com",
+                "iss": "https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
+                "scope": "openid email",
+                "token_use": "access",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        )
         creds = {"access_token": valid_token}
 
         with patch('nshm_toshi_client.cli.load_credentials', return_value=creds):
@@ -311,10 +313,12 @@ class TestWhoamiCommand(unittest.TestCase):
         self.assertIn("valid", result.output)
 
     def test_whoami_expired_token(self):
-        expired_token = _make_jwt({
-            "sub": "user-123",
-            "exp": int(time.time()) - 100,
-        })
+        expired_token = _make_jwt(
+            {
+                "sub": "user-123",
+                "exp": int(time.time()) - 100,
+            }
+        )
         creds = {"access_token": expired_token}
 
         with patch('nshm_toshi_client.cli.load_credentials', return_value=creds):
@@ -453,11 +457,13 @@ class TestM2mTokenCommand(unittest.TestCase):
 
 class TestLoginCommand(unittest.TestCase):
     def test_login_saves_credentials(self):
-        access_token = _make_jwt({
-            "exp": int(time.time()) + 3600,
-            "username": "scientist@example.com",
-            "scope": "openid",
-        })
+        access_token = _make_jwt(
+            {
+                "exp": int(time.time()) + 3600,
+                "username": "scientist@example.com",
+                "scope": "openid",
+            }
+        )
 
         mock_cognito = MagicMock()
         mock_cognito.exceptions.NotAuthorizedException = type('NotAuthorizedException', (Exception,), {})

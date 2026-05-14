@@ -48,9 +48,7 @@ class ToshiTokenManager:
         if secret_arn is None:
             secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN') or None
         if not secret_arn:
-            raise ValueError(
-                "M2M credentials not configured: pass secret_arn or set NZSHM22_TOSHI_M2M_SECRET_ARN."
-            )
+            raise ValueError("M2M credentials not configured: pass secret_arn or set NZSHM22_TOSHI_M2M_SECRET_ARN.")
         self._client_id, self._client_secret = _fetch_m2m_credentials(secret_arn)
         self._domain = cognito_domain.rstrip('/')
         self._token: str | None = None
@@ -182,15 +180,11 @@ class ToshiCredentialAuth(AuthBase):
             creds = load_credentials()
             access_token = creds.get('access_token', '')
             if not access_token:
-                raise RuntimeError(
-                    "No credentials found. Run: toshi-auth login"
-                )
+                raise RuntimeError("No credentials found. Run: toshi-auth login")
             if is_token_expired(access_token):
                 refresh_tok = creds.get('refresh_token', '')
                 if not refresh_tok:
-                    raise RuntimeError(
-                        "Token expired and no refresh token. Run: toshi-auth login"
-                    )
+                    raise RuntimeError("Token expired and no refresh token. Run: toshi-auth login")
                 logger.debug("ToshiCredentialAuth: refreshing expired token")
                 creds = self._refresh(refresh_tok, creds)
                 save_credentials(creds)

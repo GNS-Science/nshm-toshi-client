@@ -10,7 +10,8 @@ import requests_mock
 from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager, _fetch_m2m_credentials
 from nshm_toshi_client.toshi_client_base import ToshiClientBase
 
-from .conftest import mock_secrets_manager, mock_urlopen as _mock_urlopen
+from .conftest import mock_secrets_manager
+from .conftest import mock_urlopen as _mock_urlopen
 
 COGNITO_DOMAIN = "https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com"
 SECRET_ARN = "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:toshi-m2m-AbCdEf"
@@ -130,8 +131,9 @@ class TestToshiClientBaseWithTokenManager(unittest.TestCase):
             importlib.reload(cfg)
             importlib.reload(base)
 
-            with mock_secrets_manager(), patch(
-                "nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()
+            with (
+                mock_secrets_manager(),
+                patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()),
             ):
                 with requests_mock.Mocker() as m:
                     m.post(API_URL, json={"data": {"about": "test-api"}})
@@ -160,8 +162,9 @@ class TestToshiClientBaseWithTokenManager(unittest.TestCase):
             importlib.reload(cfg)
             importlib.reload(base)
 
-            with mock_secrets_manager(), patch(
-                "nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()
+            with (
+                mock_secrets_manager(),
+                patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()),
             ):
                 with requests_mock.Mocker() as m:
                     m.post(API_URL, json={"data": {"about": "test-api"}})

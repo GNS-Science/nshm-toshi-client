@@ -24,9 +24,7 @@ Install:
 try:
     import click
 except ImportError:
-    raise SystemExit(
-        "toshi-auth requires the 'cli' extra. Install with: pip install nshm-toshi-client[cli]"
-    ) from None
+    raise SystemExit("toshi-auth requires the 'cli' extra. Install with: pip install nshm-toshi-client[cli]") from None
 
 import base64
 import configparser
@@ -67,9 +65,7 @@ def _get_boto3():
     """Return the boto3 module, or raise a ClickException if unavailable."""
     mod = sys.modules.get('boto3')
     if mod is None:
-        raise click.ClickException(
-            "This command requires boto3. Install with: pip install nshm-toshi-client[cli]"
-        )
+        raise click.ClickException("This command requires boto3. Install with: pip install nshm-toshi-client[cli]")
     return mod
 
 
