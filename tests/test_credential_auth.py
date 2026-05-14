@@ -109,9 +109,7 @@ class TestToshiCredentialAuth(unittest.TestCase):
         creds = {"access_token": expired_token, "refresh_token": "refresh_tok"}
 
         refresh_response = MagicMock()
-        refresh_response.read.return_value = json.dumps(
-            {"access_token": new_token, "expires_in": 3600}
-        ).encode()
+        refresh_response.read.return_value = json.dumps({"access_token": new_token, "expires_in": 3600}).encode()
         refresh_response.__enter__ = lambda s: s
         refresh_response.__exit__ = MagicMock(return_value=False)
 
@@ -260,8 +258,6 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
                 api.run_query("{ __typename }")
 
             self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
-
-
 
 
 if __name__ == "__main__":
