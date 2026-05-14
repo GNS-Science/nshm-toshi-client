@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - deps: patch (10 pkgs), minor (4 pkgs), major: cryptography 47→48, mypy 1→2
+- deps: patch (2 pkgs), minor: markdown-it-py 4.1→4.2, urllib3 2.6→2.7 (CVE GHSA-mf9v-mfxr-j63j, GHSA-qccp-gfcp-xxvc)
 
 ## [1.2.0] - 2026-05-12
 
