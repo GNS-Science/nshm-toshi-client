@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2026-05-14
 
 ### Changed
-- **BREAKING** (safe — 1.2.0 was yanked before release): M2M auth now sources Cognito client credentials from AWS Secrets Manager. `ToshiTokenManager.__init__` is keyword-only and takes `(*, cognito_domain, secret_arn=None)`; the previous `(client_id, client_secret, cognito_domain)` form is removed. `ToshiClientBase` auto-detect fires on `NZSHM22_TOSHI_M2M_SECRET_ARN` + `NZSHM22_TOSHI_COGNITO_DOMAIN` (env-var-sourced `NZSHM22_TOSHI_COGNITO_CLIENT_ID`/`_SECRET` are no longer consulted by library code; they remain in `config.py` for the `toshi-auth` CLI's own fallback chain). Closes #42.
+- **BREAKING** (safe — 1.2.0 was yanked before release): M2M auth now sources Cognito client credentials from AWS Secrets Manager. `ToshiTokenManager.__init__` is keyword-only and takes `(*, cognito_domain, secret_arn=None)`; the previous `(client_id, client_secret, cognito_domain)` form is removed. `ToshiClientBase` auto-detect fires on `NZSHM22_TOSHI_M2M_SECRET_ARN` + `NZSHM22_TOSHI_COGNITO_DOMAIN`. The `NZSHM22_TOSHI_COGNITO_CLIENT_ID`/`_SECRET` env vars are no longer consulted anywhere. Closes #42.
 
 ### Removed
+- **BREAKING**: `toshi-auth m2m-token` CLI command and `client_credentials_flow` helper. Reachable only via a long-lived client secret on the operator's disk/env, which is exactly the footgun #42 set out to eliminate. Humans who need an M2M token should `aws secretsmanager get-secret-value` and curl the Cognito token endpoint directly.
 - Unused runtime deps: `async-timeout`, explicit `requests-toolbelt` (now provided via `gql[requests]` extra)
 - Unused dev dep: `pandas-stubs` (also drops transitive `numpy`)
 - Duplicate `mkdocs` entry in doc group

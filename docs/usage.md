@@ -36,9 +36,10 @@ api = ToshiFile(
 file = api.get_file("{example_id}")
 ```
 
-The Secrets Manager fetch happens once at construction; Cognito access tokens
-are refreshed transparently from there. Long-running jobs (24h+) never need
-to manage token lifetime.
+The Secrets Manager fetch happens once when `ToshiTokenManager` is constructed
+(either explicitly, or implicitly by `ToshiClientBase` when auto-detecting);
+Cognito access tokens are refreshed transparently from there. Long-running
+jobs (24h+) never need to manage token lifetime.
 
 You can also pass a `ToshiTokenManager` explicitly:
 
@@ -115,7 +116,6 @@ env var pointing to a config file, or falls back to `NZSHM22_TOSHI_COGNITO_*` en
 | `toshi-auth logout` | Delete saved credentials at `~/.toshi/credentials` |
 | `toshi-auth token [--raw]` | Print current Bearer token, auto-refreshing if expired |
 | `toshi-auth whoami` | Decode and display JWT claims (user, scopes, expiry) |
-| `toshi-auth m2m-token [--raw]` | Obtain M2M token via client credentials grant |
 | `toshi-auth aws-creds [--profile]` | Exchange Cognito token for AWS STS credentials |
 
 ## Methods

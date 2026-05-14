@@ -6,7 +6,6 @@ Usage:
     toshi-auth logout        # Delete saved credentials
     toshi-auth token         # Print current Bearer token (auto-refresh)
     toshi-auth whoami        # Decode and display JWT claims
-    toshi-auth m2m-token     # Client credentials flow for automation/Runzi
     toshi-auth aws-creds     # Exchange token for AWS STS credentials
 
 Token storage:
@@ -94,8 +93,6 @@ def load_auth_config() -> dict:
 
     # Fall back to env vars
     from nshm_toshi_client.config import (
-        COGNITO_CLIENT_ID,
-        COGNITO_CLIENT_SECRET,
         COGNITO_DOMAIN,
         COGNITO_REGION,
         COGNITO_SCIENTIST_CLIENT_ID,
@@ -114,8 +111,6 @@ def load_auth_config() -> dict:
         'region': COGNITO_REGION,
         'user_pool_id': COGNITO_USER_POOL_ID,
         'scientist_client_id': COGNITO_SCIENTIST_CLIENT_ID,
-        'automation_client_id': COGNITO_CLIENT_ID,
-        'automation_client_secret': COGNITO_CLIENT_SECRET,
         'cognito_domain': COGNITO_DOMAIN.removeprefix('https://'),
     }
 
@@ -198,42 +193,6 @@ def refresh_token(config: dict, refresh_tok: str) -> dict:
         'id_token': auth.get('IdToken', ''),
         'expires_in': auth.get('ExpiresIn', 3600),
     }
-
-
-# ---------------------------------------------------------------------------
-# Client Credentials flow (M2M / Runzi)
-# ---------------------------------------------------------------------------
-
-
-def client_credentials_flow(config: dict) -> str:
-    """Obtain access token via client credentials (no user context)."""
-    domain = config['cognito_domain']
-    client_id = os.environ.get('TOSHI_CLIENT_ID', config.get('automation_client_id', ''))
-    client_secret = os.environ.get('TOSHI_CLIENT_SECRET', config.get('automation_client_secret', ''))
-
-    if not client_id or not client_secret:
-        raise click.ClickException(
-            'Automation client credentials not found.\n'
-            'Set TOSHI_CLIENT_ID and TOSHI_CLIENT_SECRET in .env,\n'
-            'or configure automation_client_id/secret in auth_config.json.'
-        )
-
-    token_url = f'https://{domain}/oauth2/token'
-    scopes = 'toshi/read toshi/write'
-
-    resp = http_post_form(
-        token_url,
-        {
-            'grant_type': 'client_credentials',
-            'scope': scopes,
-        },
-        auth=(client_id, client_secret),
-    )
-
-    if 'access_token' not in resp:
-        raise click.ClickException(f'Token error: {resp}')
-
-    return resp['access_token']
 
 
 # ---------------------------------------------------------------------------
@@ -408,26 +367,6 @@ def whoami():
         click.echo(f'Issued at:      {iat_dt.isoformat()}')
 
     click.echo(f'\nGroups:         {payload.get("cognito:groups", [])}')
-
-
-@cli.command('m2m-token')
-@click.option('--raw', is_flag=True, help='Print just the raw token string (no "Bearer " prefix)')
-def m2m_token(raw):
-    """Obtain M2M (machine-to-machine) token via Client Credentials for Runzi/automation."""
-    config = load_auth_config()
-    access_token = client_credentials_flow(config)
-
-    payload = decode_jwt_payload(access_token)
-    exp = payload.get('exp', 0)
-    exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
-
-    click.echo(f'M2M token obtained. Expires: {exp_dt.isoformat()}', err=True)
-    click.echo(f'Scopes: {payload.get("scope", "none")}', err=True)
-
-    if raw:
-        click.echo(access_token)
-    else:
-        click.echo(f'Bearer {access_token}')
 
 
 @cli.command('aws-creds')
