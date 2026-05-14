@@ -173,9 +173,8 @@ class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
             env = {
                 'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
                 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'scientist_id',
-                # Clear M2M vars so they don't take precedence
-                'NZSHM22_TOSHI_COGNITO_CLIENT_ID': '',
-                'NZSHM22_TOSHI_COGNITO_CLIENT_SECRET': '',
+                # Clear M2M secret ARN so it doesn't take precedence
+                'NZSHM22_TOSHI_M2M_SECRET_ARN': '',
             }
 
             with (
@@ -210,8 +209,10 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
     def _make_token_manager(self):
         from nshm_toshi_client.auth import ToshiTokenManager
 
-        mgr = ToshiTokenManager("cid", "csecret", "https://auth.example.com")
-        return mgr
+        from .conftest import mock_secrets_manager
+
+        with mock_secrets_manager():
+            return ToshiTokenManager(cognito_domain="https://auth.example.com", secret_arn="arn:fake")
 
     def test_toshi_file_accepts_token_manager(self):
         from nshm_toshi_client.toshi_file import ToshiFile

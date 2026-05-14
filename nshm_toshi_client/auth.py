@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import os
 import threading
 import time
 from pathlib import Path
@@ -14,25 +15,43 @@ CREDENTIALS_PATH = Path.home() / '.toshi' / 'credentials'
 logger = logging.getLogger(__name__)
 
 
+def _fetch_m2m_credentials(secret_arn: str) -> tuple[str, str]:
+    """Fetch (client_id, client_secret) from AWS Secrets Manager.
+
+    The secret value must be a JSON object with `client_id` and `client_secret` keys.
+    """
+    import boto3  # optional dep, only required for this path
+
+    sm = boto3.client('secretsmanager')
+    payload = json.loads(sm.get_secret_value(SecretId=secret_arn)['SecretString'])
+    return payload['client_id'], payload['client_secret']
+
+
 class ToshiTokenManager:
     """Fetches and auto-refreshes Cognito M2M (client_credentials) tokens.
 
-    Tokens are cached and re-fetched transparently when within 60 seconds of
-    expiry, so long-running jobs (24h+) never need to manage token lifetime.
+    Client credentials are sourced from AWS Secrets Manager at construction.
+    Tokens are then cached and re-fetched transparently when within 60 seconds
+    of expiry, so long-running jobs (24h+) never need to manage token lifetime.
 
     Thread-safe: a single instance can be shared across threads.
     """
 
-    def __init__(self, client_id: str, client_secret: str, cognito_domain: str):
+    def __init__(self, *, cognito_domain: str, secret_arn: str | None = None):
         """
         Args:
-            client_id: Cognito automation app client ID
-            client_secret: Cognito automation app client secret
             cognito_domain: Cognito hosted UI domain,
                 e.g. https://toshi-auth.xxx.auth.ap-southeast-2.amazoncognito.com
+            secret_arn: AWS Secrets Manager ARN holding a JSON blob with
+                `client_id` and `client_secret`. Falls back to NZSHM22_TOSHI_M2M_SECRET_ARN.
         """
-        self._client_id = client_id
-        self._client_secret = client_secret
+        if secret_arn is None:
+            secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN') or None
+        if not secret_arn:
+            raise ValueError(
+                "M2M credentials not configured: pass secret_arn or set NZSHM22_TOSHI_M2M_SECRET_ARN."
+            )
+        self._client_id, self._client_secret = _fetch_m2m_credentials(secret_arn)
         self._domain = cognito_domain.rstrip('/')
         self._token: str | None = None
         self._expires_at: float = 0.0
