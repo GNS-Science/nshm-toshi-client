@@ -109,9 +109,7 @@ class TestToshiCredentialAuth(unittest.TestCase):
         creds = {"access_token": expired_token, "refresh_token": "refresh_tok"}
 
         refresh_response = MagicMock()
-        refresh_response.read.return_value = json.dumps(
-            {"access_token": new_token, "expires_in": 3600}
-        ).encode()
+        refresh_response.read.return_value = json.dumps({"access_token": new_token, "expires_in": 3600}).encode()
         refresh_response.__enter__ = lambda s: s
         refresh_response.__exit__ = MagicMock(return_value=False)
 
@@ -173,9 +171,8 @@ class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
             env = {
                 'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
                 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'scientist_id',
-                # Clear M2M vars so they don't take precedence
-                'NZSHM22_TOSHI_COGNITO_CLIENT_ID': '',
-                'NZSHM22_TOSHI_COGNITO_CLIENT_SECRET': '',
+                # Clear M2M secret ARN so it doesn't take precedence
+                'NZSHM22_TOSHI_M2M_SECRET_ARN': '',
             }
 
             with (
@@ -210,8 +207,10 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
     def _make_token_manager(self):
         from nshm_toshi_client.auth import ToshiTokenManager
 
-        mgr = ToshiTokenManager("cid", "csecret", "https://auth.example.com")
-        return mgr
+        from .conftest import mock_secrets_manager
+
+        with mock_secrets_manager():
+            return ToshiTokenManager(cognito_domain="https://auth.example.com", secret_arn="arn:fake")
 
     def test_toshi_file_accepts_token_manager(self):
         from nshm_toshi_client.toshi_file import ToshiFile
@@ -260,8 +259,6 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
                 api.run_query("{ __typename }")
 
             self.assertEqual(m.request_history[0].headers.get("Authorization"), "Bearer fake.jwt.token")
-
-
 
 
 if __name__ == "__main__":

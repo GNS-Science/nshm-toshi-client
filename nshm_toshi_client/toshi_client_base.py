@@ -1,15 +1,11 @@
 import logging
+import os
 
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from nshm_toshi_client.auth import CREDENTIALS_PATH, ToshiCredentialAuth, ToshiM2MAuth, ToshiTokenManager
-from nshm_toshi_client.config import (
-    COGNITO_CLIENT_ID,
-    COGNITO_CLIENT_SECRET,
-    COGNITO_DOMAIN,
-    COGNITO_SCIENTIST_CLIENT_ID,
-)
+from nshm_toshi_client.config import COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID
 
 logger = logging.getLogger(__name__)
 
@@ -69,17 +65,19 @@ class ToshiClientBase:
           with_schema_validation (bool, optional): Validate client calls before dispatch
           headers (Dict, optional): custom headers (e.g. x-api-key)
           token_manager (ToshiTokenManager, optional): explicit M2M token manager; if omitted
-            and NZSHM22_TOSHI_COGNITO_* env vars are set, one is created automatically
+            and NZSHM22_TOSHI_M2M_SECRET_ARN + NZSHM22_TOSHI_COGNITO_DOMAIN are set, one is
+            created automatically (credentials fetched from AWS Secrets Manager).
         """
-        if token_manager is None and COGNITO_CLIENT_ID and COGNITO_CLIENT_SECRET and COGNITO_DOMAIN:
+        secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN')
+        if token_manager is None and secret_arn and COGNITO_DOMAIN:
             if auth_token is not None:
                 logger.warning(
-                    "ToshiClientBase: explicit auth_token ignored — NZSHM22_TOSHI_COGNITO_* env vars "
-                    "are set, so M2M auth is being used instead. Unset the env vars or pass "
+                    "ToshiClientBase: explicit auth_token ignored — NZSHM22_TOSHI_M2M_SECRET_ARN "
+                    "is set, so M2M auth is being used instead. Unset the env var or pass "
                     "token_manager=... to override."
                 )
-            logger.debug("ToshiClientBase: auto-configuring M2M token manager from env vars")
-            token_manager = ToshiTokenManager(COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET, COGNITO_DOMAIN)
+            logger.debug("ToshiClientBase: auto-configuring M2M token manager from Secrets Manager")
+            token_manager = ToshiTokenManager(cognito_domain=COGNITO_DOMAIN, secret_arn=secret_arn)
 
         if token_manager is not None:
             transport = RequestsHTTPTransport(

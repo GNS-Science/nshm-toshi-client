@@ -11,7 +11,6 @@ from click.testing import CliRunner
 
 from nshm_toshi_client.cli import (
     cli,
-    client_credentials_flow,
     http_post_form,
     load_auth_config,
     password_flow_login,
@@ -24,8 +23,6 @@ FAKE_CONFIG = {
     'region': 'ap-southeast-2',
     'user_pool_id': 'ap-southeast-2_FAKE',
     'scientist_client_id': 'scientist_id',
-    'automation_client_id': 'automation_id',
-    'automation_client_secret': 'automation_secret',
     'cognito_domain': 'toshi-auth.example.amazoncognito.com',
 }
 
@@ -59,8 +56,6 @@ class TestLoadAuthConfig(unittest.TestCase):
             'TOSHI_COGNITO_CONFIG': '',
             'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
             'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'env_scientist_id',
-            'NZSHM22_TOSHI_COGNITO_CLIENT_ID': 'env_client_id',
-            'NZSHM22_TOSHI_COGNITO_CLIENT_SECRET': 'env_secret',
             'NZSHM22_TOSHI_COGNITO_REGION': 'us-west-2',
             'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': 'us-west-2_FAKE',
         }
@@ -252,37 +247,6 @@ class TestRefreshToken(unittest.TestCase):
         )
 
 
-class TestClientCredentialsFlow(unittest.TestCase):
-    def test_successful_flow(self):
-        access_token = _make_jwt({"exp": time.time() + 3600})
-
-        with (
-            patch('nshm_toshi_client.cli.http_post_form', return_value={"access_token": access_token}),
-            patch.dict('os.environ', {'TOSHI_CLIENT_ID': 'cid', 'TOSHI_CLIENT_SECRET': 'csecret'}),
-        ):
-            result = client_credentials_flow(FAKE_CONFIG)
-
-        self.assertEqual(result, access_token)
-
-    def test_missing_credentials_raises(self):
-        with patch.dict('os.environ', {'TOSHI_CLIENT_ID': '', 'TOSHI_CLIENT_SECRET': ''}, clear=False):
-            config = {**FAKE_CONFIG, 'automation_client_id': '', 'automation_client_secret': ''}
-            import click
-
-            with self.assertRaises(click.ClickException):
-                client_credentials_flow(config)
-
-    def test_token_error_raises(self):
-        with (
-            patch('nshm_toshi_client.cli.http_post_form', return_value={"error": "invalid_client"}),
-            patch.dict('os.environ', {'TOSHI_CLIENT_ID': 'cid', 'TOSHI_CLIENT_SECRET': 'csecret'}),
-        ):
-            import click
-
-            with self.assertRaises(click.ClickException):
-                client_credentials_flow(FAKE_CONFIG)
-
-
 # ---------------------------------------------------------------------------
 # CLI command tests
 # ---------------------------------------------------------------------------
@@ -290,15 +254,17 @@ class TestClientCredentialsFlow(unittest.TestCase):
 
 class TestWhoamiCommand(unittest.TestCase):
     def test_whoami_displays_claims(self):
-        valid_token = _make_jwt({
-            "sub": "user-123",
-            "username": "scientist@example.com",
-            "iss": "https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
-            "scope": "openid email",
-            "token_use": "access",
-            "exp": int(time.time()) + 3600,
-            "iat": int(time.time()),
-        })
+        valid_token = _make_jwt(
+            {
+                "sub": "user-123",
+                "username": "scientist@example.com",
+                "iss": "https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
+                "scope": "openid email",
+                "token_use": "access",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        )
         creds = {"access_token": valid_token}
 
         with patch('nshm_toshi_client.cli.load_credentials', return_value=creds):
@@ -311,10 +277,12 @@ class TestWhoamiCommand(unittest.TestCase):
         self.assertIn("valid", result.output)
 
     def test_whoami_expired_token(self):
-        expired_token = _make_jwt({
-            "sub": "user-123",
-            "exp": int(time.time()) - 100,
-        })
+        expired_token = _make_jwt(
+            {
+                "sub": "user-123",
+                "exp": int(time.time()) - 100,
+            }
+        )
         creds = {"access_token": expired_token}
 
         with patch('nshm_toshi_client.cli.load_credentials', return_value=creds):
@@ -421,43 +389,15 @@ class TestTokenCommand(unittest.TestCase):
         self.assertIn("Token refresh failed", result.output)
 
 
-class TestM2mTokenCommand(unittest.TestCase):
-    def test_m2m_token(self):
-        access_token = _make_jwt({"exp": time.time() + 3600, "scope": "toshi/read toshi/write"})
-
-        with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.http_post_form', return_value={"access_token": access_token}),
-            patch.dict('os.environ', {'TOSHI_CLIENT_ID': 'auto_id', 'TOSHI_CLIENT_SECRET': 'auto_secret'}),
-        ):
-            runner = CliRunner()
-            result = runner.invoke(cli, ['m2m-token', '--raw'])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn(access_token, result.output)
-
-    def test_m2m_token_bearer_format(self):
-        access_token = _make_jwt({"exp": time.time() + 3600, "scope": "toshi/read toshi/write"})
-
-        with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.http_post_form', return_value={"access_token": access_token}),
-            patch.dict('os.environ', {'TOSHI_CLIENT_ID': 'auto_id', 'TOSHI_CLIENT_SECRET': 'auto_secret'}),
-        ):
-            runner = CliRunner()
-            result = runner.invoke(cli, ['m2m-token'])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn(f"Bearer {access_token}", result.output)
-
-
 class TestLoginCommand(unittest.TestCase):
     def test_login_saves_credentials(self):
-        access_token = _make_jwt({
-            "exp": int(time.time()) + 3600,
-            "username": "scientist@example.com",
-            "scope": "openid",
-        })
+        access_token = _make_jwt(
+            {
+                "exp": int(time.time()) + 3600,
+                "username": "scientist@example.com",
+                "scope": "openid",
+            }
+        )
 
         mock_cognito = MagicMock()
         mock_cognito.exceptions.NotAuthorizedException = type('NotAuthorizedException', (Exception,), {})

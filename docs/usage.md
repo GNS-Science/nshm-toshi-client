@@ -7,13 +7,23 @@ There are three ways to authenticate with the Toshi API, listed in priority orde
 
 ### 1. M2M (machine-to-machine) — for automation and batch jobs
 
-Set these env vars and the client configures itself automatically:
+M2M credentials live in AWS Secrets Manager and are fetched at process start
+using the runtime's IAM role. The secret value must be JSON:
+
+```json
+{
+  "client_id": "your_client_id",
+  "client_secret": "your_client_secret"
+}
+```
+
+Grant your runtime IAM role `secretsmanager:GetSecretValue` on the secret ARN,
+then set these env vars and the client configures itself automatically:
 
 ```bash
 export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
-export NZSHM22_TOSHI_COGNITO_CLIENT_ID=your_client_id
-export NZSHM22_TOSHI_COGNITO_CLIENT_SECRET=your_client_secret
 export NZSHM22_TOSHI_COGNITO_DOMAIN=https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com
+export NZSHM22_TOSHI_M2M_SECRET_ARN=arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:toshi-m2m-AbCdEf
 ```
 
 ```python
@@ -26,8 +36,10 @@ api = ToshiFile(
 file = api.get_file("{example_id}")
 ```
 
-Tokens are cached and refreshed transparently — long-running jobs (24h+) never
-need to manage token lifetime.
+The Secrets Manager fetch happens once when `ToshiTokenManager` is constructed
+(either explicitly, or implicitly by `ToshiClientBase` when auto-detecting);
+Cognito access tokens are refreshed transparently from there. Long-running
+jobs (24h+) never need to manage token lifetime.
 
 You can also pass a `ToshiTokenManager` explicitly:
 
@@ -36,9 +48,8 @@ from nshm_toshi_client.auth import ToshiTokenManager
 from nshm_toshi_client import ToshiFile
 
 mgr = ToshiTokenManager(
-    client_id="your_client_id",
-    client_secret="your_client_secret",
     cognito_domain="https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com",
+    secret_arn="arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:toshi-m2m-AbCdEf",
 )
 api = ToshiFile(
     "https://example-api-url.com/graphql",
@@ -102,9 +113,9 @@ env var pointing to a config file, or falls back to `NZSHM22_TOSHI_COGNITO_*` en
 | Command | Description |
 |---------|-------------|
 | `toshi-auth login` | Username/password login, saves tokens to `~/.toshi/credentials` |
+| `toshi-auth logout` | Delete saved credentials at `~/.toshi/credentials` |
 | `toshi-auth token [--raw]` | Print current Bearer token, auto-refreshing if expired |
 | `toshi-auth whoami` | Decode and display JWT claims (user, scopes, expiry) |
-| `toshi-auth m2m-token [--raw]` | Obtain M2M token via client credentials grant |
 | `toshi-auth aws-creds [--profile]` | Exchange Cognito token for AWS STS credentials |
 
 ## Methods
