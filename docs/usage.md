@@ -166,6 +166,34 @@ To find the authoritative scope definition: AWS Console → Cognito → your
 user pool → App integration → **Resource servers** (defines available scopes)
 and **App clients** → Allowed custom scopes (grants scopes per client).
 
+**AWS Batch:** when `NZSHM22_TOSHI_API_KEY` is not set and the process is running
+inside an AWS Batch job (`AWS_BATCH_JOB_ID` is set), the API key is sourced
+automatically from AWS Secrets Manager. The secret is chosen from the API URL —
+URLs containing `TEST` use `NZSHM22_TOSHI_API_SECRET_TEST`; URLs containing `PROD`
+use `NZSHM22_TOSHI_API_SECRET_PROD`. Grant the task's IAM role
+`secretsmanager:GetSecretValue` on the relevant secret ARN; no extra env vars are
+needed.
+
+---
+
+## Auth-mode-agnostic construction
+
+`get_auth_kwargs()` returns the correct constructor keyword arguments for whichever
+auth mode is active, so callers can initialise the client without branching:
+
+```python
+from nshm_toshi_client import ToshiFile
+from nshm_toshi_client.config import API_URL, S3_URL, get_auth_kwargs
+
+api = ToshiFile(API_URL, S3_URL, None, **get_auth_kwargs())
+file = api.get_file("{example_id}")
+```
+
+When a legacy API key resolved (via env var or Secrets Manager), `get_auth_kwargs()`
+returns `{'headers': {'x-api-key': API_KEY}}`. Otherwise it returns `{}`, letting
+`ToshiClientBase` fall through to Cognito auto-detection (M2M or interactive
+credentials, as described above).
+
 ## toshi-auth CLI
 
 Install with `pip install nshm-toshi-client[cli]`.

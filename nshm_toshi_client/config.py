@@ -1,15 +1,48 @@
 import json
 import logging
-import os
+"""Runtime configuration for the nshm-toshi-client.
+
+Reads ``NZSHM22_TOSHI_*`` and ``COGNITO_*`` environment variables that relate
+to use of the toshi API and exposes them as module-level constants consumed by
+:class:`~nshm_toshi_client.toshi_client_base.ToshiClientBase` and the CLI.
+
+``API_KEY`` resolution order
+----------------------------
+1. ``NZSHM22_TOSHI_API_KEY`` environment variable.
+2. AWS Secrets Manager — only when ``NZSHM22_TOSHI_API_KEY`` is unset **and**
+   the process is running inside an AWS Batch job (``AWS_BATCH_JOB_ID`` set).
+   The secret is chosen by inspecting ``API_URL``:
+
+   * URL contains ``TEST`` → secret ``NZSHM22_TOSHI_API_SECRET_TEST``,
+     key ``NZSHM22_TOSHI_API_KEY_TEST``
+   * URL contains ``PROD`` → secret ``NZSHM22_TOSHI_API_SECRET_PROD``,
+     key ``NZSHM22_TOSHI_API_KEY_PROD``
+
+   This allows AWS Batch tasks to receive the API key via IAM-controlled secrets
+   rather than plain environment variables.  It is a temporary measure until M2M
+   JWT auth fully replaces the legacy API key.
+
+3. Empty string — Cognito JWT auth is used instead (auto-detected by
+   :class:`~nshm_toshi_client.toshi_client_base.ToshiClientBase`).
+
+Helper
+------
+:func:`get_auth_kwargs` returns constructor keyword arguments appropriate for the
+resolved auth mode, so callers do not need to branch on whether a legacy key is
+available.
+"""
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 import base64
 import json
+import os
+
 import boto3
 from botocore.exceptions import ClientError
 
-def get_secret(secret_name, region_name):
+
+def _get_secret(secret_name, region_name):
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
@@ -70,9 +103,9 @@ S3_URL = os.getenv('NZSHM22_TOSHI_S3_URL', "http://localhost:4569")
 API_KEY = os.getenv('NZSHM22_TOSHI_API_KEY', "")
 if not API_KEY and os.getenv('AWS_BATCH_JOB_ID'):
     if 'TEST' in API_URL.upper():
-        API_KEY = get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
+        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
     elif 'PROD' in API_URL.upper():
-        API_KEY = get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
+        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
 
 
 
