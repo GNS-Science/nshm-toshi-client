@@ -4,10 +4,77 @@ import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+import base64
+import json
+import boto3
+from botocore.exceptions import ClientError
+
+def get_secret(secret_name, region_name):
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(service_name='secretsmanager', region_name=region_name)
+
+    # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+    # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    # We rethrow the exception by default.
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS CMK.
+        # Depending on whether the secret is a string or binary, one of these fields will be populated.
+        if 'SecretString' in get_secret_value_response:
+            return json.loads(get_secret_value_response['SecretString'])
+        else:
+            return base64.b64decode(get_secret_value_response['SecretBinary'])
+
+
+def get_auth_kwargs() -> dict:
+    """Return toshi-client constructor kwargs for the current auth mode.
+
+    Legacy (API_KEY resolved): passes x-api-key header.
+    Cognito (no API_KEY): returns {} so the client auto-detects ~/.toshi/credentials.
+    """
+    return {'headers': {'x-api-key': API_KEY}} if API_KEY else {}
+
 
 API_URL = os.getenv('NZSHM22_TOSHI_API_URL', "http://127.0.0.1:5000/graphql")
 S3_URL = os.getenv('NZSHM22_TOSHI_S3_URL', "http://localhost:4569")
+# AWS Batch containers don't receive NZSHM22_TOSHI_API_KEY in their env;
+# they use this Secrets Manager fetch at container startup.
+# Gate on AWS_BATCH_JOB_ID so the fetch never fires on a local host — locally,
+# an empty API_KEY means "use Cognito JWT auth instead".
+# This is temporary until we switch over to using M2M JWT
 API_KEY = os.getenv('NZSHM22_TOSHI_API_KEY', "")
+if not API_KEY and os.getenv('AWS_BATCH_JOB_ID'):
+    if 'TEST' in API_URL.upper():
+        API_KEY = get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
+    elif 'PROD' in API_URL.upper():
+        API_KEY = get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
+
+
 
 # M2M JWT auth (Cognito client credentials grant)
 COGNITO_DOMAIN = os.getenv('NZSHM22_TOSHI_COGNITO_DOMAIN', '')
