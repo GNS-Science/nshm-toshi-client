@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-05-20
+
+### Added
+- `docs/auth_config.example.json` — placeholder template scientists can copy to `~/.toshi/auth_config.json`. Closes the onboarding gap where a freshly installed CLI raised `No auth config found` with no concrete starting point.
+
+### Changed
+- `ToshiClientBase` now logs a warning when auto-detected M2M or scientist auth silently overrides an explicit `headers=` argument, and when M2M shadows an existing `~/.toshi/credentials` file. Previously these overrides were silent. No behaviour change beyond the new log lines.
+- `toshi-auth` config gate now requires `scientist_client_id` (what `login` actually consumes) instead of `cognito_domain`. Error message points users at the new example file.
+- `docs/usage.md`: scientist section rewritten to lead with the JSON-file path; precedence rules and the M2M-over-scientist quirk now documented up-front.
+
 ## [1.2.1] - 2026-05-14
 
 ### Changed
