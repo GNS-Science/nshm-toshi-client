@@ -172,7 +172,10 @@ automatically from AWS Secrets Manager. The secret is chosen from the API URL â€
 URLs containing `TEST` use `NZSHM22_TOSHI_API_SECRET_TEST`; URLs containing `PROD`
 use `NZSHM22_TOSHI_API_SECRET_PROD`. Grant the task's IAM role
 `secretsmanager:GetSecretValue` on the relevant secret ARN; no extra env vars are
-needed.
+needed. If `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are
+both set, the Secrets Manager fetch is skipped entirely and the client uses Cognito
+M2M auth instead â€” set those env vars in the Batch task definition to migrate
+without touching code.
 
 ---
 

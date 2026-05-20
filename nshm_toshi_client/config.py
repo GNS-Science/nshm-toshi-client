@@ -9,8 +9,10 @@ to use of the toshi API and exposes them as module-level constants consumed by
 ``API_KEY`` resolution order
 ----------------------------
 1. ``NZSHM22_TOSHI_API_KEY`` environment variable.
-2. AWS Secrets Manager — only when ``NZSHM22_TOSHI_API_KEY`` is unset **and**
-   the process is running inside an AWS Batch job (``AWS_BATCH_JOB_ID`` set).
+2. AWS Secrets Manager — only when ``NZSHM22_TOSHI_API_KEY`` is unset, **Cognito
+   M2M is not configured** (``NZSHM22_TOSHI_M2M_SECRET_ARN`` and
+   ``NZSHM22_TOSHI_COGNITO_DOMAIN`` are not both set), and the process is running
+   inside an AWS Batch job (``AWS_BATCH_JOB_ID`` set).
    The secret is chosen by inspecting ``API_URL``:
 
    * URL contains ``TEST`` → secret ``NZSHM22_TOSHI_API_SECRET_TEST``,
@@ -20,7 +22,10 @@ to use of the toshi API and exposes them as module-level constants consumed by
 
    This allows AWS Batch tasks to receive the API key via IAM-controlled secrets
    rather than plain environment variables.  It is a temporary measure until M2M
-   JWT auth fully replaces the legacy API key.
+   JWT auth fully replaces the legacy API key.  To test Cognito M2M auth from a
+   Batch container, set ``NZSHM22_TOSHI_M2M_SECRET_ARN`` and
+   ``NZSHM22_TOSHI_COGNITO_DOMAIN`` — the Secrets Manager fetch is then skipped
+   automatically.
 
 3. Empty string — Cognito JWT auth is used instead (auto-detected by
    :class:`~nshm_toshi_client.toshi_client_base.ToshiClientBase`).
@@ -93,29 +98,28 @@ def get_auth_kwargs() -> dict:
     return {'headers': {'x-api-key': API_KEY}} if API_KEY else {}
 
 
-API_URL = os.getenv('NZSHM22_TOSHI_API_URL', "http://127.0.0.1:5000/graphql")
-S3_URL = os.getenv('NZSHM22_TOSHI_S3_URL', "http://localhost:4569")
-# AWS Batch containers don't receive NZSHM22_TOSHI_API_KEY in their env;
-# they use this Secrets Manager fetch at container startup.
-# Gate on AWS_BATCH_JOB_ID so the fetch never fires on a local host — locally,
-# an empty API_KEY means "use Cognito JWT auth instead".
-# This is temporary until we switch over to using M2M JWT
-API_KEY = os.getenv('NZSHM22_TOSHI_API_KEY', "")
-if not API_KEY and os.getenv('AWS_BATCH_JOB_ID'):
-    if 'TEST' in API_URL.upper():
-        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
-    elif 'PROD' in API_URL.upper():
-        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
-
-
-
 # M2M JWT auth (Cognito client credentials grant)
 COGNITO_DOMAIN = os.getenv('NZSHM22_TOSHI_COGNITO_DOMAIN', '')
+M2M_SECRET_ARN = os.getenv('NZSHM22_TOSHI_M2M_SECRET_ARN', '')
 
 # Interactive/scientist auth (Cognito user pool)
 COGNITO_SCIENTIST_CLIENT_ID = os.getenv('NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID', '')
 COGNITO_REGION = os.getenv('NZSHM22_TOSHI_COGNITO_REGION', 'ap-southeast-2')
 COGNITO_USER_POOL_ID = os.getenv('NZSHM22_TOSHI_COGNITO_USER_POOL_ID', '')
+
+API_URL = os.getenv('NZSHM22_TOSHI_API_URL', "http://127.0.0.1:5000/graphql")
+S3_URL = os.getenv('NZSHM22_TOSHI_S3_URL', "http://localhost:4569")
+# Temporary: legacy x-api-key resolution.
+# In Batch containers NZSHM22_TOSHI_API_KEY is typically absent; fetch from
+# Secrets Manager on startup.  Skipped when Cognito M2M is configured
+# (M2M_SECRET_ARN + COGNITO_DOMAIN both set) so Batch jobs can migrate to M2M
+# by simply setting those env vars, without code changes.
+API_KEY = os.getenv('NZSHM22_TOSHI_API_KEY', "")
+if not API_KEY and not (M2M_SECRET_ARN and COGNITO_DOMAIN) and os.getenv('AWS_BATCH_JOB_ID'):
+    if 'TEST' in API_URL.upper():
+        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
+    elif 'PROD' in API_URL.upper():
+        API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
 
 
 def _load_config_file() -> dict | None:
