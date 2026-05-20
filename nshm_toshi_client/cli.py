@@ -28,7 +28,6 @@ except ImportError:
 import base64
 import configparser
 import json
-import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -74,32 +73,20 @@ def _get_boto3():
 
 
 def load_auth_config() -> dict:
-    """Load Cognito config from JSON file or env vars.
+    """Load Cognito config for use by the CLI.
 
-    Priority:
-        1. JSON file at $TOSHI_COGNITO_CONFIG
-        2. JSON file at ~/.toshi/auth_config.json
-        3. NZSHM22_TOSHI_COGNITO_* env vars
+    Delegates resolution to `config.load_cognito_config`, which checks
+    NZSHM22_TOSHI_COGNITO_* env vars first and falls back to a JSON file at
+    `TOSHI_COGNITO_CONFIG` or `~/.toshi/auth_config.json`.
+
+    Raises `click.ClickException` if no usable config is found (the runtime
+    `ToshiClientBase` returns an empty dict in the same situation).
     """
-    config_path = os.environ.get('TOSHI_COGNITO_CONFIG', '')
-    if not config_path:
-        default = Path.home() / '.toshi' / 'auth_config.json'
-        if default.exists():
-            config_path = str(default)
+    from nshm_toshi_client.config import load_cognito_config
 
-    if config_path and os.path.exists(config_path):
-        with open(config_path) as f:
-            return json.load(f)
+    config = load_cognito_config()
 
-    # Fall back to env vars
-    from nshm_toshi_client.config import (
-        COGNITO_DOMAIN,
-        COGNITO_REGION,
-        COGNITO_SCIENTIST_CLIENT_ID,
-        COGNITO_USER_POOL_ID,
-    )
-
-    if not COGNITO_SCIENTIST_CLIENT_ID:
+    if not config.get('scientist_client_id'):
         raise click.ClickException(
             'No auth config found.\n'
             'Either:\n'
@@ -109,12 +96,10 @@ def load_auth_config() -> dict:
             '    NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID and NZSHM22_TOSHI_COGNITO_REGION).'
         )
 
-    return {
-        'region': COGNITO_REGION,
-        'user_pool_id': COGNITO_USER_POOL_ID,
-        'scientist_client_id': COGNITO_SCIENTIST_CLIENT_ID,
-        'cognito_domain': COGNITO_DOMAIN.removeprefix('https://'),
-    }
+    # boto3 cognito clients want the bare hostname, not the https:// URL.
+    if config.get('cognito_domain'):
+        config['cognito_domain'] = config['cognito_domain'].removeprefix('https://')
+    return config
 
 
 # ---------------------------------------------------------------------------

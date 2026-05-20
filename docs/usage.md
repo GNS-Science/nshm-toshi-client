@@ -6,7 +6,7 @@ There are three ways to authenticate with the Toshi API, listed in priority orde
 `ToshiClientBase` auto-detects the method based on what is configured:
 
 1. M2M — used when `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are both set.
-2. Interactive scientist — used when `~/.toshi/credentials` exists and the scientist env vars are set.
+2. Interactive scientist — used when `~/.toshi/credentials` exists and the Cognito domain + scientist client ID are configured (via `~/.toshi/auth_config.json` or the matching `NZSHM22_TOSHI_COGNITO_*` env vars).
 3. Legacy API key — **not auto-detected**; you must pass `headers={"x-api-key": ...}` explicitly.
 
 If both M2M env vars and `~/.toshi/credentials` are present on the same machine, M2M wins.
@@ -90,13 +90,12 @@ Log in (you'll be prompted for email + password):
 toshi-auth login
 ```
 
-This saves tokens to `~/.toshi/credentials`. Set the API URL and the matching
-scientist env vars so `ToshiClientBase` can auto-detect the credentials file:
+This saves tokens to `~/.toshi/credentials`. Both `toshi-auth` and
+`ToshiClientBase` read the same `~/.toshi/auth_config.json`, so no extra
+env vars are needed for Cognito auth. You still need the API URL:
 
 ```bash
 export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
-export NZSHM22_TOSHI_COGNITO_DOMAIN=https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com
-export NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID=your_scientist_client_id
 ```
 
 The client detects `~/.toshi/credentials` and refreshes tokens automatically:
@@ -111,9 +110,11 @@ api = ToshiFile(
 file = api.get_file("{example_id}")
 ```
 
-> **Alternative:** instead of `~/.toshi/auth_config.json`, you can set all the
-> `NZSHM22_TOSHI_COGNITO_*` env vars (region, user pool ID, scientist client ID,
-> domain) and the CLI will use those. The JSON file is usually less friction.
+> **Alternative:** instead of `~/.toshi/auth_config.json`, you can set the
+> `NZSHM22_TOSHI_COGNITO_*` env vars (domain, scientist client ID, region,
+> user pool ID). Env vars take precedence over the file on a per-key basis,
+> so you can mix the two (e.g. file for shared defaults, env to override
+> `NZSHM22_TOSHI_COGNITO_DOMAIN` in a dev pool).
 
 ### 3. API key (legacy)
 

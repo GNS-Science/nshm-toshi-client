@@ -197,6 +197,63 @@ class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
             importlib.reload(cfg)
             importlib.reload(base)
 
+    def test_auto_detects_via_auth_config_json_without_env_vars(self):
+        """Chris scenario: ~/.toshi/auth_config.json present, no NZSHM22_TOSHI_COGNITO_* env vars,
+        ~/.toshi/credentials present. ToshiClientBase should still auto-detect scientist auth.
+        """
+        import importlib
+        import tempfile
+
+        API_URL = "http://fake_api/graphql"
+        valid_token = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": valid_token, "refresh_token": "refresh_tok"}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fake_creds_path = tmp / 'credentials'
+            fake_creds_path.write_text(json.dumps(creds))
+
+            auth_config_path = tmp / 'auth_config.json'
+            auth_config_path.write_text(
+                json.dumps(
+                    {
+                        'region': 'ap-southeast-2',
+                        'user_pool_id': 'ap-southeast-2_FAKE',
+                        'scientist_client_id': 'file_scientist_id',
+                        'cognito_domain': 'https://toshi-auth.example.amazoncognito.com',
+                    }
+                )
+            )
+
+            env = {
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+                'NZSHM22_TOSHI_M2M_SECRET_ARN': '',
+                'TOSHI_COGNITO_CONFIG': str(auth_config_path),
+            }
+
+            with (
+                patch.dict('os.environ', env),
+                patch('nshm_toshi_client.auth.CREDENTIALS_PATH', fake_creds_path),
+                patch('nshm_toshi_client.toshi_client_base.CREDENTIALS_PATH', fake_creds_path),
+            ):
+                import nshm_toshi_client.config as cfg
+                import nshm_toshi_client.toshi_client_base as base
+
+                importlib.reload(cfg)
+                importlib.reload(base)
+
+                with requests_mock.Mocker() as m:
+                    m.post(API_URL, json={"data": {"about": "test-api"}})
+                    client = base.ToshiClientBase(API_URL, with_schema_validation=False)
+                    client.run_query("{ about }")
+
+                history = m.request_history
+                self.assertEqual(history[0].headers.get("Authorization"), f"Bearer {valid_token}")
+
+            importlib.reload(cfg)
+            importlib.reload(base)
+
     def _run_with_credentials(self, kwargs, expected_warning):
         """Helper: set up scientist auto-detect, call ToshiClientBase(**kwargs), assert warning."""
         import importlib

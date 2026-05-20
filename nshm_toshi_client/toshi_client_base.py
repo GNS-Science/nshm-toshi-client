@@ -5,7 +5,7 @@ from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from nshm_toshi_client.auth import CREDENTIALS_PATH, ToshiCredentialAuth, ToshiM2MAuth, ToshiTokenManager
-from nshm_toshi_client.config import COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID
+from nshm_toshi_client.config import load_cognito_config
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,12 @@ class ToshiClientBase:
             and NZSHM22_TOSHI_M2M_SECRET_ARN + NZSHM22_TOSHI_COGNITO_DOMAIN are set, one is
             created automatically (credentials fetched from AWS Secrets Manager).
         """
+        cognito = load_cognito_config()
+        cognito_domain = cognito['cognito_domain']
+        scientist_client_id = cognito['scientist_client_id']
+
         secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN')
-        if token_manager is None and secret_arn and COGNITO_DOMAIN:
+        if token_manager is None and secret_arn and cognito_domain:
             if auth_token is not None:
                 logger.warning(
                     "ToshiClientBase: explicit auth_token ignored — NZSHM22_TOSHI_M2M_SECRET_ARN "
@@ -87,13 +91,13 @@ class ToshiClientBase:
                     "(NZSHM22_TOSHI_M2M_SECRET_ARN is set). Unset the env var to use scientist creds."
                 )
             logger.debug("ToshiClientBase: auto-configuring M2M token manager from Secrets Manager")
-            token_manager = ToshiTokenManager(cognito_domain=COGNITO_DOMAIN, secret_arn=secret_arn)
+            token_manager = ToshiTokenManager(cognito_domain=cognito_domain, secret_arn=secret_arn)
 
         if token_manager is not None:
             transport = RequestsHTTPTransport(
                 url=url, auth=ToshiM2MAuth(token_manager), use_json=True, retries=retries, timeout=timeout
             )
-        elif CREDENTIALS_PATH.exists() and COGNITO_DOMAIN and COGNITO_SCIENTIST_CLIENT_ID:
+        elif CREDENTIALS_PATH.exists() and cognito_domain and scientist_client_id:
             if auth_token is not None:
                 logger.warning(
                     "ToshiClientBase: explicit auth_token ignored — ~/.toshi/credentials exists, "
@@ -107,16 +111,16 @@ class ToshiClientBase:
                     "the credentials file if you want to use headers."
                 )
             logger.debug("ToshiClientBase: auto-configuring interactive auth from ~/.toshi/credentials")
-            auth = ToshiCredentialAuth(COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID)
+            auth = ToshiCredentialAuth(cognito_domain, scientist_client_id)
             transport = RequestsHTTPTransport(url=url, auth=auth, use_json=True, retries=retries, timeout=timeout)
         else:
             if headers is None:
                 if auth_token is None:
                     raise ValueError(
                         "No auth configured. Provide one of: "
-                        "token_manager, NZSHM22_TOSHI_COGNITO_* env vars, "
-                        "~/.toshi/credentials (toshi-auth login), "
-                        "auth_token=..., or custom headers=..."
+                        "token_manager, NZSHM22_TOSHI_COGNITO_* env vars or "
+                        "~/.toshi/auth_config.json, plus ~/.toshi/credentials "
+                        "(toshi-auth login), auth_token=..., or custom headers=..."
                     )
                 headers = {"Authorization": f"Bearer {auth_token}"}
             transport = RequestsHTTPTransport(url=url, headers=headers, use_json=True, retries=retries, timeout=timeout)
