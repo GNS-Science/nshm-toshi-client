@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - Unreleased
+
+### Added
+- Obtain toshi api key via AWS secrets when running on AWS Batch (temporary to allow legacy authentication for M2M) if `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are not both set
+- Helper function `config.get_auth_kwargs` to set the `headers` argument when initializing a `ToshiClientBase` object. This will configure the client to correctly use Cognito JWT or legacy API key depending on if `NZSHM22_TOSHI_API_KEY` is set.
+
 ## [1.2.2] - 2026-05-20
 
 ### Added
