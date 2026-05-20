@@ -76,6 +76,16 @@ class ToshiClientBase:
                     "is set, so M2M auth is being used instead. Unset the env var or pass "
                     "token_manager=... to override."
                 )
+            if headers is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit headers ignored — NZSHM22_TOSHI_M2M_SECRET_ARN "
+                    "is set, so M2M auth is being used instead. Unset the env var to use headers."
+                )
+            if CREDENTIALS_PATH.exists():
+                logger.warning(
+                    "ToshiClientBase: ~/.toshi/credentials exists but M2M auth takes precedence "
+                    "(NZSHM22_TOSHI_M2M_SECRET_ARN is set). Unset the env var to use scientist creds."
+                )
             logger.debug("ToshiClientBase: auto-configuring M2M token manager from Secrets Manager")
             token_manager = ToshiTokenManager(cognito_domain=COGNITO_DOMAIN, secret_arn=secret_arn)
 
@@ -87,8 +97,14 @@ class ToshiClientBase:
             if auth_token is not None:
                 logger.warning(
                     "ToshiClientBase: explicit auth_token ignored — ~/.toshi/credentials exists, "
-                    "so interactive auth is being used instead. Run `toshi-auth logout` or pass "
-                    "headers=... to override."
+                    "so interactive auth is being used instead. Run `toshi-auth logout` to remove "
+                    "the credentials file if you want to use a different auth method."
+                )
+            if headers is not None:
+                logger.warning(
+                    "ToshiClientBase: explicit headers ignored — ~/.toshi/credentials exists, "
+                    "so interactive auth is being used instead. Run `toshi-auth logout` to remove "
+                    "the credentials file if you want to use headers."
                 )
             logger.debug("ToshiClientBase: auto-configuring interactive auth from ~/.toshi/credentials")
             auth = ToshiCredentialAuth(COGNITO_DOMAIN, COGNITO_SCIENTIST_CLIENT_ID)

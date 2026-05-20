@@ -197,6 +197,57 @@ class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
             importlib.reload(cfg)
             importlib.reload(base)
 
+    def _run_with_credentials(self, kwargs, expected_warning):
+        """Helper: set up scientist auto-detect, call ToshiClientBase(**kwargs), assert warning."""
+        import importlib
+        import tempfile
+
+        API_URL = "http://fake_api/graphql"
+        valid_token = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": valid_token, "refresh_token": "refresh_tok"}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_creds_path = Path(tmpdir) / 'credentials'
+            fake_creds_path.write_text(json.dumps(creds))
+
+            env = {
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'scientist_id',
+                'NZSHM22_TOSHI_M2M_SECRET_ARN': '',
+            }
+            with (
+                patch.dict('os.environ', env),
+                patch('nshm_toshi_client.auth.CREDENTIALS_PATH', fake_creds_path),
+                patch('nshm_toshi_client.toshi_client_base.CREDENTIALS_PATH', fake_creds_path),
+            ):
+                import nshm_toshi_client.config as cfg
+                import nshm_toshi_client.toshi_client_base as base
+
+                importlib.reload(cfg)
+                importlib.reload(base)
+
+                with requests_mock.Mocker() as m:
+                    m.post(API_URL, json={"data": {"about": "test-api"}})
+                    with self.assertLogs("nshm_toshi_client.toshi_client_base", level="WARNING") as cm:
+                        base.ToshiClientBase(API_URL, with_schema_validation=False, **kwargs)
+                    self.assertTrue(
+                        any(expected_warning in line for line in cm.output),
+                        f"Expected warning containing {expected_warning!r}, got: {cm.output}",
+                    )
+
+        # Restore cfg/base with the original (un-patched) env. The reload must run
+        # outside `with patch.dict(...)` so the patched env doesn't leak into later tests.
+        importlib.reload(cfg)
+        importlib.reload(base)
+
+    def test_warns_when_credentials_file_overrides_auth_token(self):
+        """Scientist auto-detect should shadow auth_token= and emit a warning."""
+        self._run_with_credentials({"auth_token": "explicit-token"}, "auth_token ignored")
+
+    def test_warns_when_credentials_file_overrides_headers(self):
+        """Scientist auto-detect should shadow headers= and emit a warning."""
+        self._run_with_credentials({"headers": {"x-api-key": "legacy-key"}}, "headers ignored")
+
 
 class TestSubclassKwargsPassthrough(unittest.TestCase):
     """Verify subclasses forward **kwargs (e.g. token_manager) to ToshiClientBase."""

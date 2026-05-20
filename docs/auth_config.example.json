@@ -1,0 +1,7 @@
+{
+  "user_pool_id": "ap-southeast-2_XXXXXXXXX",
+  "region": "ap-southeast-2",
+  "scientist_client_id": "REPLACE_WITH_SCIENTIST_APP_CLIENT_ID",
+  "cognito_domain": "toshi-XXXXXXXXXXXX.auth.ap-southeast-2.amazoncognito.com",
+  "identity_pool_id": "ap-southeast-2:REPLACE_WITH_IDENTITY_POOL_GUID"
+}

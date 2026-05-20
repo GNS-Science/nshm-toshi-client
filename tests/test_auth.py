@@ -179,6 +179,70 @@ class TestToshiClientBaseWithTokenManager(unittest.TestCase):
         importlib.reload(cfg)
         importlib.reload(base)
 
+    def test_warns_when_secret_arn_overrides_explicit_headers(self):
+        """SECRET_ARN env should shadow headers= and emit a warning."""
+        API_URL = "http://fake_api/graphql"
+        env = {
+            'NZSHM22_TOSHI_M2M_SECRET_ARN': SECRET_ARN,
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': COGNITO_DOMAIN,
+        }
+        with patch.dict('os.environ', env):
+            import importlib
+
+            import nshm_toshi_client.config as cfg
+            import nshm_toshi_client.toshi_client_base as base
+
+            importlib.reload(cfg)
+            importlib.reload(base)
+
+            with (
+                mock_secrets_manager(),
+                patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()),
+            ):
+                with requests_mock.Mocker() as m:
+                    m.post(API_URL, json={"data": {"about": "test-api"}})
+                    with self.assertLogs("nshm_toshi_client.toshi_client_base", level="WARNING") as cm:
+                        base.ToshiClientBase(
+                            API_URL,
+                            headers={"x-api-key": "legacy-key"},
+                            with_schema_validation=False,
+                        )
+                    self.assertTrue(any("headers ignored" in m for m in cm.output))
+
+        importlib.reload(cfg)
+        importlib.reload(base)
+
+    def test_warns_when_secret_arn_shadows_credentials_file(self):
+        """If both M2M env and ~/.toshi/credentials are present, M2M wins but the user is warned."""
+        API_URL = "http://fake_api/graphql"
+        env = {
+            'NZSHM22_TOSHI_M2M_SECRET_ARN': SECRET_ARN,
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': COGNITO_DOMAIN,
+        }
+        with patch.dict('os.environ', env):
+            import importlib
+
+            import nshm_toshi_client.config as cfg
+            import nshm_toshi_client.toshi_client_base as base
+
+            importlib.reload(cfg)
+            importlib.reload(base)
+
+            with (
+                mock_secrets_manager(),
+                patch("nshm_toshi_client.auth.urllib_request.urlopen", return_value=_mock_urlopen()),
+                patch.object(base, 'CREDENTIALS_PATH') as mock_path,
+            ):
+                mock_path.exists.return_value = True
+                with requests_mock.Mocker() as m:
+                    m.post(API_URL, json={"data": {"about": "test-api"}})
+                    with self.assertLogs("nshm_toshi_client.toshi_client_base", level="WARNING") as cm:
+                        base.ToshiClientBase(API_URL, with_schema_validation=False)
+                    self.assertTrue(any("M2M auth takes precedence" in m for m in cm.output))
+
+        importlib.reload(cfg)
+        importlib.reload(base)
+
     def test_raises_when_no_auth_configured(self):
         """Missing all auth paths should raise ValueError, not silently send 'Bearer None'."""
         import nshm_toshi_client.config as cfg

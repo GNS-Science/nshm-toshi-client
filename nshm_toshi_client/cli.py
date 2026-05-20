@@ -99,12 +99,14 @@ def load_auth_config() -> dict:
         COGNITO_USER_POOL_ID,
     )
 
-    if not COGNITO_DOMAIN:
+    if not COGNITO_SCIENTIST_CLIENT_ID:
         raise click.ClickException(
             'No auth config found.\n'
-            'Either place auth_config.json at ~/.toshi/auth_config.json,\n'
-            'set TOSHI_COGNITO_CONFIG to a config file path,\n'
-            'or set NZSHM22_TOSHI_COGNITO_* env vars.'
+            'Either:\n'
+            '  - copy docs/auth_config.example.json to ~/.toshi/auth_config.json and edit it,\n'
+            '  - set TOSHI_COGNITO_CONFIG to a config file path, or\n'
+            '  - set the NZSHM22_TOSHI_COGNITO_* env vars (at minimum\n'
+            '    NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID and NZSHM22_TOSHI_COGNITO_REGION).'
         )
 
     return {

@@ -80,6 +80,7 @@ class TestLoadAuthConfig(unittest.TestCase):
         env = {
             'TOSHI_COGNITO_CONFIG': '',
             'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
         }
         with (
             patch.dict('os.environ', env),
@@ -92,6 +93,30 @@ class TestLoadAuthConfig(unittest.TestCase):
 
             with self.assertRaises(click.ClickException):
                 load_auth_config()
+
+        importlib.reload(cfg)
+
+    def test_raises_when_scientist_client_id_missing(self):
+        """Gate is scientist_client_id (what login() consumes), not just cognito_domain."""
+        import importlib
+
+        env = {
+            'TOSHI_COGNITO_CONFIG': '',
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+        }
+        with (
+            patch.dict('os.environ', env),
+            patch('nshm_toshi_client.cli.Path.home', return_value=Path('/nonexistent')),
+        ):
+            import nshm_toshi_client.config as cfg
+
+            importlib.reload(cfg)
+            import click
+
+            with self.assertRaises(click.ClickException) as ctx:
+                load_auth_config()
+            self.assertIn("auth_config.example.json", str(ctx.exception))
 
         importlib.reload(cfg)
 

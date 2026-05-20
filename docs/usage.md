@@ -3,7 +3,14 @@
 ## Authentication
 
 There are three ways to authenticate with the Toshi API, listed in priority order.
-`ToshiClientBase` auto-detects the method based on what is configured.
+`ToshiClientBase` auto-detects the method based on what is configured:
+
+1. M2M — used when `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are both set.
+2. Interactive scientist — used when `~/.toshi/credentials` exists and the scientist env vars are set.
+3. Legacy API key — **not auto-detected**; you must pass `headers={"x-api-key": ...}` explicitly.
+
+If both M2M env vars and `~/.toshi/credentials` are present on the same machine, M2M wins.
+`ToshiClientBase` logs a warning when auto-detection overrides an explicit `auth_token` or `headers` argument.
 
 ### 1. M2M (machine-to-machine) — for automation and batch jobs
 
@@ -60,14 +67,31 @@ api = ToshiFile(
 
 ### 2. Interactive credentials — for scientists
 
-First install the CLI and log in:
+Install the CLI:
 
 ```bash
 pip install nshm-toshi-client[cli]
+```
+
+Then give the CLI the Cognito pool details. The simplest way is a JSON config file —
+copy [`docs/auth_config.example.json`](auth_config.example.json) to
+`~/.toshi/auth_config.json` and fill in the values for your Toshi deployment (ask
+the Toshi admin if you don't have them):
+
+```bash
+mkdir -p ~/.toshi
+cp auth_config.example.json ~/.toshi/auth_config.json
+# then edit ~/.toshi/auth_config.json
+```
+
+Log in (you'll be prompted for email + password):
+
+```bash
 toshi-auth login
 ```
 
-This saves tokens to `~/.toshi/credentials`. Then set these env vars:
+This saves tokens to `~/.toshi/credentials`. Set the API URL and the matching
+scientist env vars so `ToshiClientBase` can auto-detect the credentials file:
 
 ```bash
 export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql
@@ -86,6 +110,10 @@ api = ToshiFile(
 )
 file = api.get_file("{example_id}")
 ```
+
+> **Alternative:** instead of `~/.toshi/auth_config.json`, you can set all the
+> `NZSHM22_TOSHI_COGNITO_*` env vars (region, user pool ID, scientist client ID,
+> domain) and the CLI will use those. The JSON file is usually less friction.
 
 ### 3. API key (legacy)
 
