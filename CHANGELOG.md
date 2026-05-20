@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `docs/auth_config.example.json` — placeholder template scientists can copy to `~/.toshi/auth_config.json`. Closes the onboarding gap where a freshly installed CLI raised `No auth config found` with no concrete starting point.
+- `docs/usage.md`: new `## Scopes` section documenting Cognito Resource Server scopes (`toshi/read`, `toshi/write`), how to inspect current token scopes with `toshi-auth whoami`, the M2M vs scientist scope-source difference, and a test plan for verifying scope policy against a deployment.
 
 ### Changed
 - `ToshiClientBase` now logs a warning when auto-detected M2M or scientist auth silently overrides an explicit `headers=` argument, and when M2M shadows an existing `~/.toshi/credentials` file. Previously these overrides were silent. No behaviour change beyond the new log lines.

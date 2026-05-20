@@ -131,6 +131,40 @@ api = ToshiFile(API_URL, S3_URL, None, headers=headers)
 file = api.get_file("{example_id}")
 ```
 
+## Scopes
+
+Toshi API authorisation is gated by OAuth scopes defined as a **Resource
+Server** in the Cognito user pool. The naming convention is
+`{resource_server}/{scope}` — e.g. `toshi/read`, `toshi/write`. Scopes
+themselves are deployment configuration; this client only *requests* them.
+
+You can see what scopes the token you currently hold actually has:
+
+```bash
+toshi-auth whoami
+```
+
+### Where scopes come from
+
+| Auth method | How scopes are chosen |
+|---|---|
+| **M2M** (`client_credentials` grant) | Client explicitly requests `toshi/read toshi/write`. This is **hardcoded** at `nshm_toshi_client/auth.py:72`. The automation app client in Cognito must be configured to permit those scopes, or the token request fails with `invalid_scope`. |
+| **Scientist** (`USER_PASSWORD_AUTH`) | Client does **not** request scopes. Cognito returns whatever the scientist app client is configured to grant by default (set per deployment under App clients → Allowed custom scopes). |
+| **Legacy API key** | Not a Cognito token — scopes don't apply; access is gated by the API key itself on the server side. |
+
+### Testing scope behaviour
+
+When verifying scope policy against a deployment:
+
+- A token with only `toshi/read` should be rejected by the API on any write mutation.
+- A token with no `toshi/*` scope should be rejected on every call.
+- An M2M token request will fail at Cognito (not the API) if the automation app client isn't permitted the hardcoded scopes — look for `invalid_scope` in the Cognito response.
+- Scientist scope changes don't require a code release — but a user already holding a token must `toshi-auth logout && toshi-auth login` to pick up the new scopes.
+
+To find the authoritative scope definition: AWS Console → Cognito → your
+user pool → App integration → **Resource servers** (defines available scopes)
+and **App clients** → Allowed custom scopes (grants scopes per client).
+
 ## toshi-auth CLI
 
 Install with `pip install nshm-toshi-client[cli]`.
