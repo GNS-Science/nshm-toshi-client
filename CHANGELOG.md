@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Hoisted `COGNITO_DOMAIN`, `COGNITO_REGION`, `COGNITO_SCIENTIST_CLIENT_ID`, `COGNITO_USER_POOL_ID`, `M2M_SECRET_ARN`, `get_auth_kwargs` to top level package.
 
+### Changed
+- Migrate from `bump2version` to `hatch-vcs` for versioning.
+
 ## [1.2.2] - 2026-05-21
 
 ### Added
