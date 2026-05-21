@@ -80,6 +80,7 @@ class TestLoadAuthConfig(unittest.TestCase):
         env = {
             'TOSHI_COGNITO_CONFIG': '',
             'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
         }
         with (
             patch.dict('os.environ', env),
@@ -94,6 +95,61 @@ class TestLoadAuthConfig(unittest.TestCase):
                 load_auth_config()
 
         importlib.reload(cfg)
+
+    def test_raises_when_scientist_client_id_missing(self):
+        """Gate is scientist_client_id (what login() consumes), not just cognito_domain."""
+        import importlib
+
+        env = {
+            'TOSHI_COGNITO_CONFIG': '',
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://toshi-auth.example.amazoncognito.com',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+        }
+        with (
+            patch.dict('os.environ', env),
+            patch('nshm_toshi_client.cli.Path.home', return_value=Path('/nonexistent')),
+        ):
+            import nshm_toshi_client.config as cfg
+
+            importlib.reload(cfg)
+            import click
+
+            with self.assertRaises(click.ClickException) as ctx:
+                load_auth_config()
+            self.assertIn("auth_config.example.json", str(ctx.exception))
+
+        importlib.reload(cfg)
+
+    def test_load_cognito_config_per_key_env_over_file(self):
+        """Env vars win per-key; file fills only the keys env left blank."""
+        from nshm_toshi_client.config import load_cognito_config
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(
+                {
+                    'cognito_domain': 'file-domain.example.com',
+                    'scientist_client_id': 'file_scientist_id',
+                    'region': 'us-west-2',
+                    'user_pool_id': 'file_pool',
+                },
+                f,
+            )
+            f.flush()
+            env = {
+                'TOSHI_COGNITO_CONFIG': f.name,
+                # env sets cognito_domain only; file should fill the rest
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://env-domain.example.com',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+                'NZSHM22_TOSHI_COGNITO_REGION': '',
+                'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': '',
+            }
+            with patch.dict('os.environ', env):
+                config = load_cognito_config()
+
+        self.assertEqual(config['cognito_domain'], 'https://env-domain.example.com')
+        self.assertEqual(config['scientist_client_id'], 'file_scientist_id')
+        self.assertEqual(config['region'], 'us-west-2')
+        self.assertEqual(config['user_pool_id'], 'file_pool')
 
 
 # ---------------------------------------------------------------------------

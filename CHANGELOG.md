@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-05-20
+
+### Added
+- `docs/auth_config.example.json` — placeholder template scientists can copy to `~/.toshi/auth_config.json`. Closes the onboarding gap where a freshly installed CLI raised `No auth config found` with no concrete starting point.
+- `docs/usage.md`: new `## Scopes` section documenting Cognito Resource Server scopes (`toshi/read`, `toshi/write`), how to inspect current token scopes with `toshi-auth whoami`, the M2M vs scientist scope-source difference, and a test plan for verifying scope policy against a deployment.
+
+### Changed
+- `ToshiClientBase` now reads `~/.toshi/auth_config.json` (via the shared `config.load_cognito_config()` loader) when Cognito env vars aren't set. Previously the JSON file was only consulted by the `toshi-auth` CLI, so scientists who set up the file still had to export `NZSHM22_TOSHI_COGNITO_*` env vars before runtime code could auto-detect their credentials. Env vars still take precedence per-key.
+- `ToshiClientBase` now logs a warning when auto-detected M2M or scientist auth silently overrides an explicit `headers=` argument, and when M2M shadows an existing `~/.toshi/credentials` file. Previously these overrides were silent. No behaviour change beyond the new log lines.
+- `toshi-auth` config gate now requires `scientist_client_id` (what `login` actually consumes) instead of `cognito_domain`. Error message points users at the new example file.
+- `docs/usage.md`: scientist section rewritten to lead with the JSON-file path; precedence rules and the M2M-over-scientist quirk now documented up-front.
+
 ## [1.2.1] - 2026-05-14
 
 ### Changed
