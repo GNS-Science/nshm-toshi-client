@@ -171,9 +171,7 @@ To find the authoritative scope definition: AWS Console → Cognito → your
 user pool → App integration → **Resource servers** (defines available scopes)
 and **App clients** → Allowed custom scopes (grants scopes per client).
 
-
 ---
-
 
 ## toshi-auth CLI
 
