@@ -1,6 +1,6 @@
 [project]
 name = "nshm-toshi-client"
-version = "1.2.2"
+dynamic = ["version"]
 description = "client for toshi API"
 authors = [
     { name = "Chris B Chamberlain", email = "chrisbc@artisan.co.nz" },
@@ -42,7 +42,6 @@ doc = [
     "mkdocstrings-python>=2.0.3",
 ]
 dev = [
-    "bump2version>=1.0.1",
     "ipython>=8.11.0",
     "mypy>=2.0.0",
     "pip-audit>=2.9.0",
@@ -57,8 +56,14 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "nshm_toshi_client/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["nshm_toshi_client"]
