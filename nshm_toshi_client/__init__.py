@@ -2,7 +2,6 @@
 
 __author__ = """Chris B Chamberlain"""
 __email__ = 'chrisbc@artisan.co.nz'
-__version__ = '1.2.2'
-
+from ._version import __version__
 from .config import API_KEY, API_URL, S3_URL
 from .toshi_file import ToshiFile
