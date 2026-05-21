@@ -1,5 +1,3 @@
-import json
-import logging
 """Runtime configuration for the nshm-toshi-client.
 
 Reads ``NZSHM22_TOSHI_*`` and ``COGNITO_*`` environment variables that relate
@@ -35,17 +33,72 @@ Helper
 :func:`get_auth_kwargs` returns constructor keyword arguments appropriate for the
 resolved auth mode, so callers do not need to branch on whether a legacy key is
 available.
-"""
-from pathlib import Path
 
-logger = logging.getLogger(__name__)
+:func:`load_cognito_config` resolves the Cognito config from env vars, with JSON-file fallback.
+"""
 import base64
 import json
+import logging
 import os
+from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
 
+logger = logging.getLogger(__name__)
+
+def _load_config_file() -> dict | None:
+    """Return parsed contents of the JSON config file, or None if not found/invalid.
+
+    Resolves the path from the `TOSHI_COGNITO_CONFIG` env var, falling back to
+    `~/.toshi/auth_config.json`.
+    """
+    path_str = os.getenv('TOSHI_COGNITO_CONFIG', '')
+    path = Path(path_str) if path_str else Path.home() / '.toshi' / 'auth_config.json'
+    if not path.exists():
+        return None
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Failed to read Cognito config from %s: %s", path, exc)
+        return None
+
+
+def load_cognito_config() -> dict:
+    """Resolve the Cognito config from env vars, with JSON-file fallback.
+
+    Env vars take precedence over the file on a per-key basis: if the env var
+    is set, it wins; if not, the corresponding key from the JSON file is used.
+
+    Used by both `toshi-auth` (CLI) and `ToshiClientBase` (runtime) so a
+    scientist who set up `~/.toshi/auth_config.json` does not also have to
+    export the matching env vars.
+
+    Returns a dict with keys: cognito_domain, scientist_client_id, region,
+    user_pool_id. May also include `identity_pool_id` if present in the file
+    (needed by `toshi-auth aws-creds`). Missing values are empty strings,
+    except region which defaults to 'ap-southeast-2'.
+    """
+    config = {
+        'cognito_domain': os.getenv('NZSHM22_TOSHI_COGNITO_DOMAIN', ''),
+        'scientist_client_id': os.getenv('NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID', ''),
+        'region': os.getenv('NZSHM22_TOSHI_COGNITO_REGION', ''),
+        'user_pool_id': os.getenv('NZSHM22_TOSHI_COGNITO_USER_POOL_ID', ''),
+    }
+
+    if not all(config[k] for k in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id')):
+        file_config = _load_config_file()
+        if file_config:
+            for key in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id'):
+                if not config[key] and file_config.get(key):
+                    config[key] = file_config[key]
+            if file_config.get('identity_pool_id'):
+                config['identity_pool_id'] = file_config['identity_pool_id']
+
+    if not config['region']:
+        config['region'] = 'ap-southeast-2'
+    return config
 
 def _get_secret(secret_name, region_name):
 
@@ -120,57 +173,3 @@ if not API_KEY and not (M2M_SECRET_ARN and COGNITO_DOMAIN) and os.getenv('AWS_BA
         API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_TEST", "us-east-1").get("NZSHM22_TOSHI_API_KEY_TEST")
     elif 'PROD' in API_URL.upper():
         API_KEY = _get_secret("NZSHM22_TOSHI_API_SECRET_PROD", "us-east-1").get("NZSHM22_TOSHI_API_KEY_PROD")
-
-
-def _load_config_file() -> dict | None:
-    """Return parsed contents of the JSON config file, or None if not found/invalid.
-
-    Resolves the path from the `TOSHI_COGNITO_CONFIG` env var, falling back to
-    `~/.toshi/auth_config.json`.
-    """
-    path_str = os.getenv('TOSHI_COGNITO_CONFIG', '')
-    path = Path(path_str) if path_str else Path.home() / '.toshi' / 'auth_config.json'
-    if not path.exists():
-        return None
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to read Cognito config from %s: %s", path, exc)
-        return None
-
-
-def load_cognito_config() -> dict:
-    """Resolve the Cognito config from env vars, with JSON-file fallback.
-
-    Env vars take precedence over the file on a per-key basis: if the env var
-    is set, it wins; if not, the corresponding key from the JSON file is used.
-
-    Used by both `toshi-auth` (CLI) and `ToshiClientBase` (runtime) so a
-    scientist who set up `~/.toshi/auth_config.json` does not also have to
-    export the matching env vars.
-
-    Returns a dict with keys: cognito_domain, scientist_client_id, region,
-    user_pool_id. May also include `identity_pool_id` if present in the file
-    (needed by `toshi-auth aws-creds`). Missing values are empty strings,
-    except region which defaults to 'ap-southeast-2'.
-    """
-    config = {
-        'cognito_domain': os.getenv('NZSHM22_TOSHI_COGNITO_DOMAIN', ''),
-        'scientist_client_id': os.getenv('NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID', ''),
-        'region': os.getenv('NZSHM22_TOSHI_COGNITO_REGION', ''),
-        'user_pool_id': os.getenv('NZSHM22_TOSHI_COGNITO_USER_POOL_ID', ''),
-    }
-
-    if not all(config[k] for k in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id')):
-        file_config = _load_config_file()
-        if file_config:
-            for key in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id'):
-                if not config[key] and file_config.get(key):
-                    config[key] = file_config[key]
-            if file_config.get('identity_pool_id'):
-                config['identity_pool_id'] = file_config['identity_pool_id']
-
-    if not config['region']:
-        config['region'] = 'ap-southeast-2'
-    return config
