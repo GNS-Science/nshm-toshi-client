@@ -125,12 +125,16 @@ export NZSHM22_TOSHI_S3_URL=https://example-s3-url.com
 ```
 
 ```python
-from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL
+from nshm_toshi_client import ToshiFile, API_URL, API_KEY, S3_URL, get_auth_kwargs
 
 headers = {"x-api-key": API_KEY}
-api = ToshiFile(API_URL, S3_URL, None, headers=headers)
+api = ToshiFile(API_URL, S3_URL, None, **get_auth_kwargs())
 file = api.get_file("{example_id}")
 ```
+
+The helper function `get_auth_kwargs()` returns the correct constructor keyword arguments for whichever auth mode is active, so callers can initialise the client without branching. When a legacy API key resolved (via env var or Secrets Manager), `get_auth_kwargs()` returns `{'headers': {'x-api-key': API_KEY}}`. Otherwise it returns `{}`, letting `ToshiClientBase` fall through to Cognito auto-detection (M2M or interactive credentials, as described above).
+
+`nshm_toshi_client.API_KEY` provides a universal way for applications to define the API key. For local machine usage it is obtained from the `NZSHM22_TOSHI_API_KEY` environment variable. When `NZSHM22_TOSHI_API_KEY` is not set and the process is running inside an AWS Batch job (`AWS_BATCH_JOB_ID` is set), the legacy API key can be sourced automatically from AWS Secrets Manager. The secret is chosen from the API URL — URLs containing `TEST` use `NZSHM22_TOSHI_API_SECRET_TEST`; URLs containing `PROD` use `NZSHM22_TOSHI_API_SECRET_PROD`. Grant the task's IAM role `secretsmanager:GetSecretValue` on the relevant secret ARN; no extra env vars are needed. If `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are both set, the Secrets Manager fetch is skipped entirely and the client uses Cognito M2M auth instead — set those env vars in the Batch task definition to migrate to Cognito auth without touching code.
 
 ## Scopes
 
@@ -144,6 +148,7 @@ You can see what scopes the token you currently hold actually has:
 ```bash
 toshi-auth whoami
 ```
+
 
 ### Where scopes come from
 
@@ -165,6 +170,8 @@ When verifying scope policy against a deployment:
 To find the authoritative scope definition: AWS Console → Cognito → your
 user pool → App integration → **Resource servers** (defines available scopes)
 and **App clients** → Allowed custom scopes (grants scopes per client).
+
+---
 
 ## toshi-auth CLI
 

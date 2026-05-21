@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.2] - 2026-05-20
+## [1.2.2] - 2026-05-21
 
 ### Added
+- Obtain toshi api key via AWS secrets when running on AWS Batch (temporary to allow legacy authentication for M2M) if `NZSHM22_TOSHI_M2M_SECRET_ARN` and `NZSHM22_TOSHI_COGNITO_DOMAIN` are not both set
+- Helper function `config.get_auth_kwargs` to set the `headers` argument when initializing a `ToshiClientBase` object. This will configure the client to correctly use Cognito JWT or legacy API key depending on if `NZSHM22_TOSHI_API_KEY` is set.
 - `docs/auth_config.example.json` — placeholder template scientists can copy to `~/.toshi/auth_config.json`. Closes the onboarding gap where a freshly installed CLI raised `No auth config found` with no concrete starting point.
 - `docs/usage.md`: new `## Scopes` section documenting Cognito Resource Server scopes (`toshi/read`, `toshi/write`), how to inspect current token scopes with `toshi-auth whoami`, the M2M vs scientist scope-source difference, and a test plan for verifying scope policy against a deployment.
 
@@ -15,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ToshiClientBase` now logs a warning when auto-detected M2M or scientist auth silently overrides an explicit `headers=` argument, and when M2M shadows an existing `~/.toshi/credentials` file. Previously these overrides were silent. No behaviour change beyond the new log lines.
 - `toshi-auth` config gate now requires `scientist_client_id` (what `login` actually consumes) instead of `cognito_domain`. Error message points users at the new example file.
 - `docs/usage.md`: scientist section rewritten to lead with the JSON-file path; precedence rules and the M2M-over-scientist quirk now documented up-front.
+- Moved `boto3` dependency to required (was optional)
 
 ## [1.2.1] - 2026-05-14
 
