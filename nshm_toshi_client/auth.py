@@ -190,21 +190,66 @@ class ToshiCredentialAuth(AuthBase):
         r.headers["Authorization"] = f"Bearer {self._get_token()}"
         return r
 
+    # ------------------------------------------------------------------
+    # Public token API
+    # ------------------------------------------------------------------
+
+    def get_token(self) -> str:
+        """Return a fresh access_token, refreshing if expired.
+
+        Raises:
+            nshm_toshi_client.aws.NoCredentialsError: credentials missing/empty.
+            nshm_toshi_client.aws.RefreshFailedError: refresh token rejected.
+        """
+        return self._get_valid_credentials()['access_token']
+
+    def get_id_token(self) -> str:
+        """Return a fresh id_token, refreshing if expired.
+
+        The id_token (not the access_token) is required by Cognito Identity
+        Pools; use this method when exchanging tokens for AWS STS credentials.
+
+        Raises:
+            nshm_toshi_client.aws.NoCredentialsError: credentials missing, empty,
+                or id_token absent (re-run ``toshi-auth login`` to re-persist it).
+            nshm_toshi_client.aws.RefreshFailedError: refresh token rejected.
+        """
+        creds = self._get_valid_credentials()
+        id_token = creds.get('id_token', '')
+        if not id_token:
+            from nshm_toshi_client.aws import NoCredentialsError
+
+            raise NoCredentialsError("No id_token in credentials. Re-run: toshi-auth login")
+        return id_token
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
     def _get_token(self) -> str:
+        # Private — use get_token() or nshm_toshi_client.aws.get_aws_session() instead.
+        return self.get_token()
+
+    def _get_valid_credentials(self) -> dict:
+        """Load credentials, refresh if access_token is expired, return the dict."""
+        from nshm_toshi_client.aws import NoCredentialsError, RefreshFailedError
+
         with self._lock:
             creds = load_credentials()
             access_token = creds.get('access_token', '')
             if not access_token:
-                raise RuntimeError("No credentials found. Run: toshi-auth login")
+                raise NoCredentialsError("No credentials found. Run: toshi-auth login")
             if is_token_expired(access_token):
                 refresh_tok = creds.get('refresh_token', '')
                 if not refresh_tok:
-                    raise RuntimeError("Token expired and no refresh token. Run: toshi-auth login")
+                    raise RefreshFailedError("Token expired and no refresh token. Run: toshi-auth login")
                 logger.debug("ToshiCredentialAuth: refreshing expired token")
-                creds = self._refresh(refresh_tok, creds)
+                try:
+                    creds = self._refresh(refresh_tok, creds)
+                except Exception as exc:
+                    raise RefreshFailedError(f"Token refresh failed: {exc}") from exc
                 save_credentials(creds)
-                access_token = creds['access_token']
-            return access_token
+            return creds
 
     def _refresh(self, refresh_tok: str, creds: dict) -> dict:
         body = parse.urlencode(

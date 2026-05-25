@@ -1,0 +1,117 @@
+"""Programmatic AWS-credentials helper for Cognito Identity Pool federation.
+
+Typical usage::
+
+    from nshm_toshi_client.aws import get_aws_session, CognitoAuthError
+
+    try:
+        session = get_aws_session()
+        s3 = session.client('s3')
+    except CognitoAuthError as exc:
+        # Not logged in, refresh failed, config incomplete, etc.
+        raise SystemExit(f"toshi-auth login required: {exc}") from exc
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import boto3
+
+
+# ---------------------------------------------------------------------------
+# Typed exception hierarchy
+# ---------------------------------------------------------------------------
+
+
+class CognitoAuthError(Exception):
+    """Base class for all Cognito-federation failures raised by get_aws_session()."""
+
+
+class NoCredentialsError(CognitoAuthError):
+    """~/.toshi/credentials is missing or lacks id_token. Run: toshi-auth login."""
+
+
+class RefreshFailedError(CognitoAuthError):
+    """Refresh token expired or rejected by Cognito. Run: toshi-auth login."""
+
+
+class ConfigIncompleteError(CognitoAuthError):
+    """auth_config / env vars are missing one or more required keys.
+
+    Attributes:
+        missing: list of key names that were absent or empty.
+    """
+
+    def __init__(self, missing: list[str]) -> None:
+        super().__init__(f"Cognito config missing required keys: {', '.join(missing)}")
+        self.missing = missing
+
+
+class IdentityPoolError(CognitoAuthError):
+    """Cognito Identity Pool rejected the federation request (wraps botocore ClientError)."""
+
+
+# ---------------------------------------------------------------------------
+# Required config keys
+# ---------------------------------------------------------------------------
+
+_REQUIRED_KEYS = ('scientist_client_id', 'cognito_domain', 'region', 'user_pool_id', 'identity_pool_id')
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def get_aws_session() -> boto3.Session:
+    """Return a boto3.Session whose credentials come from Cognito Identity Pool
+    federation, using tokens cached by ``toshi-auth login``. Refreshes if expired.
+
+    Raises:
+        NoCredentialsError: ~/.toshi/credentials is missing or lacks id_token.
+        RefreshFailedError: refresh token expired or the token endpoint rejected it.
+        ConfigIncompleteError: auth_config or env vars are missing required keys.
+        IdentityPoolError: cognito-identity GetId/GetCredentialsForIdentity rejected.
+    """
+    import boto3 as _boto3
+    import botocore.exceptions
+
+    from nshm_toshi_client.auth import ToshiCredentialAuth
+    from nshm_toshi_client.config import load_cognito_config
+
+    # 1. Resolve config and validate all required keys are present.
+    config = load_cognito_config()
+    missing = [k for k in _REQUIRED_KEYS if not config.get(k)]
+    if missing:
+        raise ConfigIncompleteError(missing)
+
+    cognito_domain = config['cognito_domain'].removeprefix('https://')
+    region = config['region']
+    user_pool_id = config['user_pool_id']
+    identity_pool_id = config['identity_pool_id']
+
+    # 2. Get a fresh id_token, refreshing if the stored token is expired.
+    #    NoCredentialsError / RefreshFailedError propagate directly.
+    auth = ToshiCredentialAuth(cognito_domain=cognito_domain, scientist_client_id=config['scientist_client_id'])
+    id_token = auth.get_id_token()
+
+    # 3. Exchange id_token for STS credentials via Cognito Identity Pool.
+    logins = {f'cognito-idp.{region}.amazonaws.com/{user_pool_id}': id_token}
+    cognito_identity = _boto3.client('cognito-identity', region_name=region)
+    try:
+        get_id_resp = cognito_identity.get_id(IdentityPoolId=identity_pool_id, Logins=logins)
+        creds_resp = cognito_identity.get_credentials_for_identity(
+            IdentityId=get_id_resp['IdentityId'], Logins=logins
+        )
+    except botocore.exceptions.ClientError as exc:
+        raise IdentityPoolError(str(exc)) from exc
+
+    aws_creds = creds_resp['Credentials']
+    return _boto3.Session(
+        aws_access_key_id=aws_creds['AccessKeyId'],
+        aws_secret_access_key=aws_creds['SecretKey'],
+        aws_session_token=aws_creds['SessionToken'],
+        region_name=region,
+    )

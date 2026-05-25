@@ -593,106 +593,107 @@ class TestLogoutCommand(unittest.TestCase):
 
 
 class TestAwsCredsCommand(unittest.TestCase):
-    def test_aws_creds_not_logged_in(self):
-        with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.load_credentials', return_value={}),
-        ):
-            runner = CliRunner()
-            result = runner.invoke(cli, ['aws-creds'])
+    """Tests for the aws-creds CLI command.
 
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("Not logged in", result.output)
+    The command now delegates to get_aws_session() (from nshm_toshi_client.aws)
+    and passes the resulting Session to get_aws_credentials(session, profile).
+    Refresh / credential logic is covered in tests/test_aws.py.
+    """
 
-    def test_aws_creds_expired_no_refresh(self):
-        expired_id_token = _make_jwt({"exp": time.time() - 100})
-        # id_token is present but expired, and no refresh_token — should error
-        creds = {"access_token": "some-access-token", "id_token": expired_id_token}
+    def _mock_session(self, access_key='AKIAFAKE', secret='secret', token='session', region='ap-southeast-2'):
+        """Return a mock boto3 Session with get_credentials().get_frozen_credentials()."""
+        frozen = MagicMock()
+        frozen.access_key = access_key
+        frozen.secret_key = secret
+        frozen.token = token
+        session = MagicMock()
+        session.get_credentials.return_value.get_frozen_credentials.return_value = frozen
+        session.region_name = region
+        return session
 
-        with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.load_credentials', return_value=creds),
-        ):
-            runner = CliRunner()
-            result = runner.invoke(cli, ['aws-creds'])
+    # --- happy path ---
 
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("no refresh token", result.output)
-
-    def test_aws_creds_calls_get_aws_credentials(self):
-        valid_id_token = _make_jwt({"exp": time.time() + 3600})
-        creds = {"access_token": "some-access-token", "id_token": valid_id_token, "refresh_token": "refresh_tok"}
+    def test_aws_creds_calls_get_aws_credentials_with_session(self):
+        """aws-creds obtains a Session then delegates disk-write to get_aws_credentials."""
+        mock_session = self._mock_session()
 
         with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.load_credentials', return_value=creds),
-            patch('nshm_toshi_client.cli.get_aws_credentials', return_value='toshi') as mock_get_aws,
+            patch('nshm_toshi_client.cli.get_aws_session', return_value=mock_session),
+            patch('nshm_toshi_client.cli.get_aws_credentials', return_value='myprofile') as mock_write,
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ['aws-creds', '--profile', 'myprofile'])
 
-        self.assertEqual(result.exit_code, 0)
-        mock_get_aws.assert_called_once_with(FAKE_CONFIG, valid_id_token, 'myprofile')
+        self.assertEqual(result.exit_code, 0, result.output)
+        mock_write.assert_called_once_with(mock_session, 'myprofile')
         self.assertIn("AWS credentials saved", result.output)
 
-    def test_get_aws_credentials_happy_path(self):
-        from datetime import datetime, timezone
+    # --- error translation ---
 
+    def test_aws_creds_not_logged_in(self):
+        from nshm_toshi_client.aws import NoCredentialsError
+
+        with patch('nshm_toshi_client.cli.get_aws_session', side_effect=NoCredentialsError("No credentials")):
+            runner = CliRunner()
+            result = runner.invoke(cli, ['aws-creds'])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("No credentials", result.output)
+
+    def test_aws_creds_refresh_failed(self):
+        from nshm_toshi_client.aws import RefreshFailedError
+
+        with patch('nshm_toshi_client.cli.get_aws_session', side_effect=RefreshFailedError("Token expired")):
+            runner = CliRunner()
+            result = runner.invoke(cli, ['aws-creds'])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Token expired", result.output)
+
+    def test_aws_creds_config_incomplete(self):
+        from nshm_toshi_client.aws import ConfigIncompleteError
+
+        with patch(
+            'nshm_toshi_client.cli.get_aws_session',
+            side_effect=ConfigIncompleteError(['identity_pool_id']),
+        ):
+            runner = CliRunner()
+            result = runner.invoke(cli, ['aws-creds'])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("identity_pool_id", result.output)
+
+    def test_aws_creds_identity_pool_error(self):
+        from nshm_toshi_client.aws import IdentityPoolError
+
+        with patch(
+            'nshm_toshi_client.cli.get_aws_session',
+            side_effect=IdentityPoolError("NotAuthorizedException"),
+        ):
+            runner = CliRunner()
+            result = runner.invoke(cli, ['aws-creds'])
+
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Identity Pool federation failed", result.output)
+
+    # --- get_aws_credentials unit test (file-write step) ---
+
+    def test_get_aws_credentials_writes_credentials_file(self):
+        """get_aws_credentials(session, profile) extracts creds from Session and writes ~/.aws/credentials."""
         from nshm_toshi_client.cli import get_aws_credentials
 
-        config = {**FAKE_CONFIG, 'identity_pool_id': 'ap-southeast-2:fake-pool'}
-        expiration = datetime(2030, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
-        mock_cognito_identity = MagicMock()
-        mock_cognito_identity.get_id.return_value = {'IdentityId': 'identity-1'}
-        mock_cognito_identity.get_credentials_for_identity.return_value = {
-            'Credentials': {
-                'AccessKeyId': 'AKIAFAKE',
-                'SecretKey': 'secret',
-                'SessionToken': 'session',
-                'Expiration': expiration,
-            }
-        }
-        mock_boto3 = MagicMock()
-        mock_boto3.client.return_value = mock_cognito_identity
+        mock_session = self._mock_session(access_key='AKIAFAKE', secret='secret', token='session_tok')
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with (
-                patch.dict('sys.modules', {'boto3': mock_boto3}),
-                patch('nshm_toshi_client.cli.Path.home', return_value=Path(tmpdir)),
-            ):
-                profile = get_aws_credentials(config, 'fake-id-token', profile='toshi')
+            with patch('nshm_toshi_client.cli.Path.home', return_value=Path(tmpdir)):
+                profile = get_aws_credentials(mock_session, profile='toshi')
 
             self.assertEqual(profile, 'toshi')
             written = (Path(tmpdir) / '.aws' / 'credentials').read_text()
             self.assertIn('[toshi]', written)
             self.assertIn('aws_access_key_id = AKIAFAKE', written)
             self.assertIn('aws_secret_access_key = secret', written)
-            self.assertIn('aws_session_token = session', written)
-
-    def test_aws_creds_refreshes_expired_token(self):
-        expired_id_token = _make_jwt({"exp": time.time() - 100})
-        new_access_token = _make_jwt({"exp": time.time() + 3600})
-        new_id_token = _make_jwt({"exp": time.time() + 3600, "aud": "scientist_id"})
-        creds = {"access_token": "old-access", "id_token": expired_id_token, "refresh_token": "refresh_tok"}
-
-        with (
-            patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
-            patch('nshm_toshi_client.cli.load_credentials', return_value=creds),
-            patch(
-                'nshm_toshi_client.cli.refresh_token',
-                return_value={'access_token': new_access_token, 'id_token': new_id_token, 'expires_in': 3600},
-            ),
-            patch('nshm_toshi_client.cli.save_credentials') as mock_save,
-            patch('nshm_toshi_client.cli.get_aws_credentials', return_value='toshi') as mock_get_aws,
-        ):
-            runner = CliRunner()
-            result = runner.invoke(cli, ['aws-creds'])
-
-        self.assertEqual(result.exit_code, 0)
-        mock_get_aws.assert_called_once_with(FAKE_CONFIG, new_id_token, 'toshi')
-        saved_creds = mock_save.call_args[0][0]
-        self.assertEqual(saved_creds['id_token'], new_id_token)
-        self.assertEqual(saved_creds['access_token'], new_access_token)
+            self.assertIn('aws_session_token = session_tok', written)
 
 
 if __name__ == "__main__":
