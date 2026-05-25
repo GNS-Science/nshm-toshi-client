@@ -32,7 +32,17 @@ class TestLoadAuthConfig(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             json.dump(FAKE_CONFIG, f)
             f.flush()
-            with patch.dict('os.environ', {'TOSHI_COGNITO_CONFIG': f.name}):
+            # Clear any NZSHM22_TOSHI_COGNITO_* env vars that might bleed in from
+            # the developer's environment and override the file values.
+            clean_env = {
+                'TOSHI_COGNITO_CONFIG': f.name,
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+                'NZSHM22_TOSHI_COGNITO_REGION': '',
+                'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': '',
+                'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID': '',
+            }
+            with patch.dict('os.environ', clean_env):
                 config = load_auth_config()
         self.assertEqual(config['region'], 'ap-southeast-2')
         self.assertEqual(config['scientist_client_id'], 'scientist_id')
@@ -43,7 +53,17 @@ class TestLoadAuthConfig(unittest.TestCase):
             default.parent.mkdir(parents=True, exist_ok=True)
             default.write_text(json.dumps(FAKE_CONFIG))
 
-            with patch.dict('os.environ', {'TOSHI_COGNITO_CONFIG': str(default)}):
+            # Clear any NZSHM22_TOSHI_COGNITO_* env vars that might bleed in from
+            # the developer's environment and override the file values.
+            clean_env = {
+                'TOSHI_COGNITO_CONFIG': str(default),
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': '',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': '',
+                'NZSHM22_TOSHI_COGNITO_REGION': '',
+                'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': '',
+                'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID': '',
+            }
+            with patch.dict('os.environ', clean_env):
                 import nshm_toshi_client.cli as cli_mod
 
                 config = cli_mod.load_auth_config()
@@ -150,6 +170,64 @@ class TestLoadAuthConfig(unittest.TestCase):
         self.assertEqual(config['scientist_client_id'], 'file_scientist_id')
         self.assertEqual(config['region'], 'us-west-2')
         self.assertEqual(config['user_pool_id'], 'file_pool')
+
+    def test_identity_pool_id_from_file_when_all_env_vars_set(self):
+        """identity_pool_id must be read from the file even when all four COGNITO env vars are set.
+
+        Regression test for issue #48 (Bug 2): the old implementation only
+        consulted auth_config.json inside an ``if not all(...)`` guard over the
+        four env-backed keys, so identity_pool_id was silently dropped whenever
+        all four env vars were present.
+        """
+        from nshm_toshi_client.config import load_cognito_config
+
+        file_data = {
+            'cognito_domain': 'file-domain.example.com',
+            'scientist_client_id': 'file_scientist_id',
+            'region': 'ap-southeast-2',
+            'user_pool_id': 'ap-southeast-2_POOL',
+            'identity_pool_id': 'ap-southeast-2:fake-pool-id',
+        }
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(file_data, f)
+            f.flush()
+            env = {
+                'TOSHI_COGNITO_CONFIG': f.name,
+                # All four env vars fully populated — this triggered the bug
+                'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://env-domain.example.com',
+                'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'env_scientist_id',
+                'NZSHM22_TOSHI_COGNITO_REGION': 'ap-southeast-2',
+                'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': 'ap-southeast-2_POOL',
+                'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID': '',  # not set via env
+            }
+            with patch.dict('os.environ', env):
+                config = load_cognito_config()
+
+        # identity_pool_id must be picked up from the file
+        self.assertEqual(config['identity_pool_id'], 'ap-southeast-2:fake-pool-id')
+        # env vars still win for the four env-backed keys
+        self.assertEqual(config['cognito_domain'], 'https://env-domain.example.com')
+        self.assertEqual(config['scientist_client_id'], 'env_scientist_id')
+
+    def test_identity_pool_id_from_env_var(self):
+        """NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID env var is honoured."""
+        from nshm_toshi_client.config import load_cognito_config
+
+        env = {
+            'TOSHI_COGNITO_CONFIG': '',
+            'NZSHM22_TOSHI_COGNITO_DOMAIN': 'https://env-domain.example.com',
+            'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID': 'env_scientist_id',
+            'NZSHM22_TOSHI_COGNITO_REGION': 'ap-southeast-2',
+            'NZSHM22_TOSHI_COGNITO_USER_POOL_ID': 'ap-southeast-2_POOL',
+            'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID': 'ap-southeast-2:env-pool-id',
+        }
+        with (
+            patch.dict('os.environ', env),
+            patch('nshm_toshi_client.config._load_config_file', return_value=None),
+        ):
+            config = load_cognito_config()
+
+        self.assertEqual(config['identity_pool_id'], 'ap-southeast-2:env-pool-id')
 
 
 # ---------------------------------------------------------------------------
@@ -527,8 +605,9 @@ class TestAwsCredsCommand(unittest.TestCase):
         self.assertIn("Not logged in", result.output)
 
     def test_aws_creds_expired_no_refresh(self):
-        expired_token = _make_jwt({"exp": time.time() - 100})
-        creds = {"access_token": expired_token}
+        expired_id_token = _make_jwt({"exp": time.time() - 100})
+        # id_token is present but expired, and no refresh_token — should error
+        creds = {"access_token": "some-access-token", "id_token": expired_id_token}
 
         with (
             patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
@@ -541,8 +620,8 @@ class TestAwsCredsCommand(unittest.TestCase):
         self.assertIn("no refresh token", result.output)
 
     def test_aws_creds_calls_get_aws_credentials(self):
-        valid_token = _make_jwt({"exp": time.time() + 3600})
-        creds = {"access_token": valid_token, "refresh_token": "refresh_tok"}
+        valid_id_token = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": "some-access-token", "id_token": valid_id_token, "refresh_token": "refresh_tok"}
 
         with (
             patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
@@ -553,7 +632,7 @@ class TestAwsCredsCommand(unittest.TestCase):
             result = runner.invoke(cli, ['aws-creds', '--profile', 'myprofile'])
 
         self.assertEqual(result.exit_code, 0)
-        mock_get_aws.assert_called_once_with(FAKE_CONFIG, valid_token, 'myprofile')
+        mock_get_aws.assert_called_once_with(FAKE_CONFIG, valid_id_token, 'myprofile')
         self.assertIn("AWS credentials saved", result.output)
 
     def test_get_aws_credentials_happy_path(self):
@@ -581,7 +660,7 @@ class TestAwsCredsCommand(unittest.TestCase):
                 patch.dict('sys.modules', {'boto3': mock_boto3}),
                 patch('nshm_toshi_client.cli.Path.home', return_value=Path(tmpdir)),
             ):
-                profile = get_aws_credentials(config, 'fake-access-token', profile='toshi')
+                profile = get_aws_credentials(config, 'fake-id-token', profile='toshi')
 
             self.assertEqual(profile, 'toshi')
             written = (Path(tmpdir) / '.aws' / 'credentials').read_text()
@@ -591,22 +670,29 @@ class TestAwsCredsCommand(unittest.TestCase):
             self.assertIn('aws_session_token = session', written)
 
     def test_aws_creds_refreshes_expired_token(self):
-        expired_token = _make_jwt({"exp": time.time() - 100})
-        new_token = _make_jwt({"exp": time.time() + 3600})
-        creds = {"access_token": expired_token, "refresh_token": "refresh_tok"}
+        expired_id_token = _make_jwt({"exp": time.time() - 100})
+        new_access_token = _make_jwt({"exp": time.time() + 3600})
+        new_id_token = _make_jwt({"exp": time.time() + 3600, "aud": "scientist_id"})
+        creds = {"access_token": "old-access", "id_token": expired_id_token, "refresh_token": "refresh_tok"}
 
         with (
             patch('nshm_toshi_client.cli.load_auth_config', return_value=FAKE_CONFIG),
             patch('nshm_toshi_client.cli.load_credentials', return_value=creds),
-            patch('nshm_toshi_client.cli.refresh_token', return_value={'access_token': new_token, 'expires_in': 3600}),
-            patch('nshm_toshi_client.cli.save_credentials'),
+            patch(
+                'nshm_toshi_client.cli.refresh_token',
+                return_value={'access_token': new_access_token, 'id_token': new_id_token, 'expires_in': 3600},
+            ),
+            patch('nshm_toshi_client.cli.save_credentials') as mock_save,
             patch('nshm_toshi_client.cli.get_aws_credentials', return_value='toshi') as mock_get_aws,
         ):
             runner = CliRunner()
             result = runner.invoke(cli, ['aws-creds'])
 
         self.assertEqual(result.exit_code, 0)
-        mock_get_aws.assert_called_once_with(FAKE_CONFIG, new_token, 'toshi')
+        mock_get_aws.assert_called_once_with(FAKE_CONFIG, new_id_token, 'toshi')
+        saved_creds = mock_save.call_args[0][0]
+        self.assertEqual(saved_creds['id_token'], new_id_token)
+        self.assertEqual(saved_creds['access_token'], new_access_token)
 
 
 if __name__ == "__main__":

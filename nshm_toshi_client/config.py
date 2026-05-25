@@ -71,31 +71,41 @@ def load_cognito_config() -> dict:
 
     Env vars take precedence over the file on a per-key basis: if the env var
     is set, it wins; if not, the corresponding key from the JSON file is used.
+    The file is always consulted so that keys with no env-var equivalent
+    (currently ``identity_pool_id``) are never silently dropped when all other
+    env vars are present.
+
+    Supported env vars:
+    - ``NZSHM22_TOSHI_COGNITO_DOMAIN``
+    - ``NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID``
+    - ``NZSHM22_TOSHI_COGNITO_REGION``
+    - ``NZSHM22_TOSHI_COGNITO_USER_POOL_ID``
+    - ``NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID``
 
     Used by both `toshi-auth` (CLI) and `ToshiClientBase` (runtime) so a
     scientist who set up `~/.toshi/auth_config.json` does not also have to
     export the matching env vars.
 
     Returns a dict with keys: cognito_domain, scientist_client_id, region,
-    user_pool_id. May also include `identity_pool_id` if present in the file
-    (needed by `toshi-auth aws-creds`). Missing values are empty strings,
-    except region which defaults to 'ap-southeast-2'.
+    user_pool_id, identity_pool_id. Missing values are empty strings, except
+    region which defaults to 'ap-southeast-2'.
     """
-    config = {
-        'cognito_domain': os.getenv('NZSHM22_TOSHI_COGNITO_DOMAIN', ''),
-        'scientist_client_id': os.getenv('NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID', ''),
-        'region': os.getenv('NZSHM22_TOSHI_COGNITO_REGION', ''),
-        'user_pool_id': os.getenv('NZSHM22_TOSHI_COGNITO_USER_POOL_ID', ''),
+    _ENV_KEYS = {
+        'cognito_domain': 'NZSHM22_TOSHI_COGNITO_DOMAIN',
+        'scientist_client_id': 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID',
+        'region': 'NZSHM22_TOSHI_COGNITO_REGION',
+        'user_pool_id': 'NZSHM22_TOSHI_COGNITO_USER_POOL_ID',
+        'identity_pool_id': 'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID',
     }
+    config = {k: os.getenv(env, '') for k, env in _ENV_KEYS.items()}
 
-    if not all(config[k] for k in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id')):
-        file_config = _load_config_file()
-        if file_config:
-            for key in ('cognito_domain', 'scientist_client_id', 'region', 'user_pool_id'):
-                if not config[key] and file_config.get(key):
-                    config[key] = file_config[key]
-            if file_config.get('identity_pool_id'):
-                config['identity_pool_id'] = file_config['identity_pool_id']
+    # Always read the file so that keys with no env-var equivalent
+    # (e.g. identity_pool_id) are picked up regardless of which env vars
+    # are set.
+    file_config = _load_config_file() or {}
+    for key in _ENV_KEYS:
+        if not config[key] and file_config.get(key):
+            config[key] = file_config[key]
 
     if not config['region']:
         config['region'] = 'ap-southeast-2'
