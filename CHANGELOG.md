@@ -7,15 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `nshm_toshi_client.aws`: new module exposing `get_aws_session() -> boto3.Session` — returns STS credentials via Cognito Identity Pool federation using tokens cached by `toshi-auth login`. Closes #50.
+- `nshm_toshi_client.aws`: new module exposing `get_aws_session() -> boto3.Session` — returns STS credentials via Cognito Identity Pool federation using tokens cached by `toshi-auth login`.
 - `nshm_toshi_client.aws`: typed exception hierarchy (`CognitoAuthError`, `NoCredentialsError`, `RefreshFailedError`, `ConfigIncompleteError`, `IdentityPoolError`) so callers can react to specific failure modes without string-matching.
 - `ToshiCredentialAuth.get_token()` — public API returning a fresh access_token (refreshes if expired). Raises `NoCredentialsError` / `RefreshFailedError`.
 - `ToshiCredentialAuth.get_id_token()` — public API returning a fresh id_token for use with Cognito Identity Pool federation (refreshes if expired). Raises `NoCredentialsError` / `RefreshFailedError`.
-- `NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID` env var — identity pool ID can now be supplied via env var in addition to `~/.toshi/auth_config.json`. Closes #48 (Bug 2 optional item).
+- `NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID` env var — identity pool ID can now be supplied via env var in addition to `~/.toshi/auth_config.json`.
 
 ### Fixed
 - `toshi-auth aws-creds` was passing `access_token` to the Cognito Identity Pool `GetId`/`GetCredentialsForIdentity` `Logins` map; Identity Pools validate the `aud` claim, which access tokens omit. Now passes `id_token`. Closes #48 (Bug 1).
-- `config.load_cognito_config()` only consulted `~/.toshi/auth_config.json` when at least one of the four `NZSHM22_TOSHI_COGNITO_*` env vars was missing, causing `identity_pool_id` to be silently dropped when all four env vars were set. File is now always consulted. Closes #48 (Bug 2).
+- `config.load_cognito_config()` only consulted `~/.toshi/auth_config.json` when at least one of the four `NZSHM22_TOSHI_COGNITO_*` env vars was missing, causing `identity_pool_id` to be silently dropped when all four env vars were set. File is now always consulted.
 
 ### Fixed
 - `ToshiTokenManager` now derives the AWS region from the Secrets Manager ARN, so `AWS_DEFAULT_REGION` is no longer required in batch environments. An optional `region=` kwarg on `ToshiTokenManager` (and `_fetch_m2m_credentials`) overrides the parsed value.

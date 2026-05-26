@@ -176,6 +176,67 @@ and **App clients** → Allowed custom scopes (grants scopes per client).
 
 ---
 
+## AWS credentials (Identity Pool federation)
+
+`toshi-auth login` writes JWT tokens to `~/.toshi/credentials`.  The same
+login produces **two distinct credential types** depending on how you consume
+them:
+
+| Path | Credential type | Stored where | Consumer |
+|---|---|---|---|
+| `ToshiClientBase` (auto-detected) | JWT Bearer token (`access_token`) | `~/.toshi/credentials` | `Authorization: Bearer` header on GraphQL calls to the Toshi API |
+| `get_aws_session()` (programmatic) | AWS STS credentials (in-memory `boto3.Session`) | not persisted | direct AWS service calls in Python (S3, Batch, …) |
+| `toshi-auth aws-creds` (CLI) | AWS STS credentials | `~/.aws/credentials` (`[toshi]` profile) | `aws` CLI / boto3 default credential chain |
+
+`ToshiClientBase` **never** reads `~/.aws/credentials` — it uses only the JWT
+path above.
+
+### In-process Python: `get_aws_session()`
+
+When you need to call AWS services from Python directly, use
+`nshm_toshi_client.aws.get_aws_session()`.  It exchanges the `id_token` from
+`~/.toshi/credentials` for STS credentials via Cognito Identity Pool federation
+and returns a ready-to-use `boto3.Session`:
+
+```python
+from nshm_toshi_client.aws import get_aws_session, CognitoAuthError
+
+try:
+    session = get_aws_session()
+    s3 = session.client('s3')
+    print(s3.list_buckets())
+except CognitoAuthError as exc:
+    # Not logged in, token refresh failed, config incomplete, etc.
+    raise SystemExit(f"Run: toshi-auth login  ({exc})") from exc
+```
+
+Typed exceptions (`NoCredentialsError`, `RefreshFailedError`,
+`ConfigIncompleteError`, `IdentityPoolError`) all inherit from
+`CognitoAuthError`, so you can catch the base or react to specific failures.
+
+### Out-of-process tools: `toshi-auth aws-creds`
+
+For the `aws` CLI, scripts that rely on `AWS_PROFILE`, or any tool that uses
+the boto3 default credential chain, write the STS credentials to
+`~/.aws/credentials` once and let those tools pick them up:
+
+```bash
+toshi-auth aws-creds --profile toshi
+# → writes [toshi] section to ~/.aws/credentials
+
+aws --profile toshi s3 ls
+AWS_PROFILE=toshi python my_script.py
+```
+
+### When to use which
+
+Use `get_aws_session()` when your Python process needs AWS access — no file
+round-trip, typed exceptions, and token refresh handled automatically.  Use
+`toshi-auth aws-creds` when you need credentials available to the `aws` CLI or
+other tools outside your Python process.
+
+---
+
 ## toshi-auth CLI
 
 Install with `pip install nshm-toshi-client[cli]`.
@@ -189,7 +250,7 @@ env var pointing to a config file, or falls back to `NZSHM22_TOSHI_COGNITO_*` en
 | `toshi-auth logout` | Delete saved credentials at `~/.toshi/credentials` |
 | `toshi-auth token [--raw]` | Print current Bearer token, auto-refreshing if expired |
 | `toshi-auth whoami` | Decode and display JWT claims (user, scopes, expiry) |
-| `toshi-auth aws-creds [--profile]` | Exchange Cognito token for AWS STS credentials |
+| `toshi-auth aws-creds [--profile]` | Exchange Cognito token for AWS STS credentials, written to `~/.aws/credentials` |
 
 ## Methods
 

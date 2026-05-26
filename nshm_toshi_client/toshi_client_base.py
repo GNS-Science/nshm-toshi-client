@@ -1,3 +1,18 @@
+"""GraphQL client base for the Toshi API, with JWT Bearer auth.
+
+``ToshiClientBase`` wraps ``gql.Client`` and injects an
+``Authorization: Bearer <jwt>`` header on every request.  The JWT (access_token)
+comes from one of three auto-detected sources (priority order): M2M token manager
+(``NZSHM22_TOSHI_M2M_SECRET_ARN`` + ``COGNITO_DOMAIN``), interactive credentials
+(``~/.toshi/credentials`` written by ``toshi-auth login``), or an explicit
+``auth_token`` / ``headers`` kwarg.
+
+This module is for Toshi **API** access only.  For AWS service access (S3,
+Batch, …) use ``nshm_toshi_client.aws.get_aws_session()`` — that returns a
+``boto3.Session`` via Cognito Identity Pool federation and is independent of
+this module.
+"""
+
 import logging
 import os
 

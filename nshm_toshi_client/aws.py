@@ -1,5 +1,17 @@
 """Programmatic AWS-credentials helper for Cognito Identity Pool federation.
 
+Use this module when you need a ``boto3.Session`` for **AWS service** access
+(S3, Batch, SSM, …).  It is *not* used by ``ToshiClientBase``, which
+authenticates to the Toshi GraphQL API using a JWT Bearer token sourced from
+``~/.toshi/credentials``.
+
+``get_aws_session()`` is the in-process equivalent of ``toshi-auth aws-creds``
+(the CLI command that writes ``~/.aws/credentials``).  Both start from the same
+``id_token`` in ``~/.toshi/credentials``; the CLI persists the resulting STS
+credentials to disk for the ``aws`` CLI and boto3's default credential chain,
+while this function returns the ``boto3.Session`` directly — no file round-trip,
+typed exceptions, and token refresh handled automatically.
+
 Typical usage::
 
     from nshm_toshi_client.aws import get_aws_session, CognitoAuthError

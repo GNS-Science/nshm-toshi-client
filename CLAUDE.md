@@ -70,11 +70,33 @@ Check LSP diagnostics after every edit; fix type errors and missing imports imme
 
 ### Auth auto-detection (in `ToshiClientBase.__init__`)
 
-Priority order:
+`ToshiClientBase` authenticates to the **Toshi GraphQL API** using JWT Bearer
+tokens.  Detection priority order:
+
 1. `NZSHM22_TOSHI_M2M_SECRET_ARN` + `COGNITO_DOMAIN` → M2M token manager
 2. `~/.toshi/credentials` + Cognito config → interactive credential auth
 3. `auth_token` kwarg → static Bearer header
 4. `headers` kwarg → passed directly
+
+### AWS service access (`nshm_toshi_client.aws`)
+
+For AWS service calls (S3, Batch, SSM, …) use `get_aws_session()` — separate
+code path from `ToshiClientBase`:
+
+```python
+from nshm_toshi_client.aws import get_aws_session, CognitoAuthError
+
+session = get_aws_session()          # boto3.Session with STS creds
+session.client('s3').list_buckets()
+```
+
+- Returns a `boto3.Session` via Cognito Identity Pool federation using the
+  `id_token` from `~/.toshi/credentials`.  Refreshes automatically if expired.
+- Typed exception hierarchy: `CognitoAuthError` → `NoCredentialsError`,
+  `RefreshFailedError`, `ConfigIncompleteError`, `IdentityPoolError`.
+- `~/.aws/credentials` is a **sink** written by `toshi-auth aws-creds` for the
+  `aws` CLI / boto3 default credential chain.  `ToshiClientBase` never reads it;
+  in-process Python callers should use `get_aws_session()` directly.
 
 ### GraphQL call pattern
 

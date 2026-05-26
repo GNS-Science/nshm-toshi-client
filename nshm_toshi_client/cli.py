@@ -346,7 +346,12 @@ def whoami():
 @cli.command('aws-creds')
 @click.option('--profile', default='toshi', help='AWS credentials profile name', show_default=True)
 def aws_creds(profile):
-    """Exchange Cognito token for AWS STS credentials and write to ~/.aws/credentials."""
+    """Exchange Cognito token for AWS STS credentials and write to ~/.aws/credentials.
+
+    For in-process Python callers, use ``nshm_toshi_client.aws.get_aws_session()``
+    directly — this command exists for shells, the ``aws`` CLI, and tools that
+    already use the boto3 default credential chain.
+    """
     click.echo('Getting AWS credentials via Identity Pool...')
     try:
         session = get_aws_session()
