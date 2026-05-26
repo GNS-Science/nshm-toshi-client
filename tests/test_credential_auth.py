@@ -276,18 +276,6 @@ class TestToshiCredentialAuthPublicMethods(unittest.TestCase):
 
         self.assertEqual(result, new_id)
 
-    # --- backwards compat: _get_token() still works ---
-
-    def test_private_get_token_still_works(self):
-        """_get_token() is kept as a private alias; existing internal call sites must not break."""
-        valid_token = _make_jwt({"exp": time.time() + 3600})
-        creds = {"access_token": valid_token, "refresh_token": "tok"}
-
-        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
-            result = self._make_auth()._get_token()
-
-        self.assertEqual(result, valid_token)
-
 
 class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):
     def test_auto_detects_credentials_file(self):

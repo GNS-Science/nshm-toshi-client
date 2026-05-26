@@ -187,7 +187,7 @@ class ToshiCredentialAuth(AuthBase):
         self._lock = threading.Lock()
 
     def __call__(self, r):
-        r.headers["Authorization"] = f"Bearer {self._get_token()}"
+        r.headers["Authorization"] = f"Bearer {self.get_token()}"
         return r
 
     # ------------------------------------------------------------------
@@ -225,10 +225,6 @@ class ToshiCredentialAuth(AuthBase):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
-
-    def _get_token(self) -> str:
-        # Private — use get_token() or nshm_toshi_client.aws.get_aws_session() instead.
-        return self.get_token()
 
     def _get_valid_credentials(self) -> dict:
         """Load credentials, refresh if access_token is expired, return the dict."""
