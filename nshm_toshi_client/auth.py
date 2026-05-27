@@ -15,6 +15,42 @@ CREDENTIALS_PATH = Path.home() / '.toshi' / 'credentials'
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Typed exception hierarchy (re-exported by nshm_toshi_client.aws)
+# ---------------------------------------------------------------------------
+
+
+class CognitoAuthError(Exception):
+    """Base class for all Cognito-federation failures."""
+
+
+class NoCredentialsError(CognitoAuthError):
+    """~/.toshi/credentials is missing or lacks the required token; re-authenticate."""
+
+
+class RefreshFailedError(CognitoAuthError):
+    """Refresh token expired or was rejected by Cognito; re-authenticate."""
+
+
+class ConfigIncompleteError(CognitoAuthError):
+    """auth_config / env vars are missing one or more required keys.
+
+    Attributes:
+        missing: list of key names that were absent or empty.
+    """
+
+    def __init__(self, missing: list[str]) -> None:
+        super().__init__(f"Cognito config missing required keys: {', '.join(missing)}")
+        self.missing = missing
+
+
+class IdentityPoolError(CognitoAuthError):
+    """Cognito Identity Pool rejected the federation request (wraps botocore ClientError)."""
+
+
+# ---------------------------------------------------------------------------
+
+
 def _region_from_arn(secret_arn: str) -> str:
     """Extract the AWS region from a Secrets Manager ARN.
 
@@ -217,9 +253,7 @@ class ToshiCredentialAuth(AuthBase):
         creds = self._get_valid_credentials()
         id_token = creds.get('id_token', '')
         if not id_token:
-            from nshm_toshi_client.aws import NoCredentialsError
-
-            raise NoCredentialsError("No id_token in credentials. Re-run: toshi-auth login")
+            raise NoCredentialsError("No id_token in credentials; re-authenticate to obtain a fresh one.")
         return id_token
 
     # ------------------------------------------------------------------
@@ -228,17 +262,15 @@ class ToshiCredentialAuth(AuthBase):
 
     def _get_valid_credentials(self) -> dict:
         """Load credentials, refresh if access_token is expired, return the dict."""
-        from nshm_toshi_client.aws import NoCredentialsError, RefreshFailedError
-
         with self._lock:
             creds = load_credentials()
             access_token = creds.get('access_token', '')
             if not access_token:
-                raise NoCredentialsError("No credentials found. Run: toshi-auth login")
+                raise NoCredentialsError("No credentials found; re-authenticate.")
             if is_token_expired(access_token):
                 refresh_tok = creds.get('refresh_token', '')
                 if not refresh_tok:
-                    raise RefreshFailedError("Token expired and no refresh token. Run: toshi-auth login")
+                    raise RefreshFailedError("Token expired and no refresh token available; re-authenticate.")
                 logger.debug("ToshiCredentialAuth: refreshing expired token")
                 try:
                     creds = self._refresh(refresh_tok, creds)

@@ -32,8 +32,12 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+if TYPE_CHECKING:
+    import boto3
 
 from nshm_toshi_client.auth import (
     CREDENTIALS_PATH,
@@ -194,7 +198,7 @@ def refresh_token(config: dict, refresh_tok: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def get_aws_credentials(session: "boto3.Session", profile: str = 'toshi') -> str:  # type: ignore[name-defined]
+def get_aws_credentials(session: "boto3.Session", profile: str = 'toshi') -> str:
     """Write STS credentials from a boto3 Session to ~/.aws/credentials.
 
     The Session is produced by ``nshm_toshi_client.aws.get_aws_session()``,
@@ -355,11 +359,7 @@ def aws_creds(profile):
     click.echo('Getting AWS credentials via Identity Pool...')
     try:
         session = get_aws_session()
-    except NoCredentialsError as exc:
-        raise click.ClickException(f'{exc}') from None
-    except RefreshFailedError as exc:
-        raise click.ClickException(f'{exc}') from None
-    except ConfigIncompleteError as exc:
+    except (NoCredentialsError, RefreshFailedError, ConfigIncompleteError) as exc:
         raise click.ClickException(f'{exc}') from None
     except IdentityPoolError as exc:
         raise click.ClickException(f'Identity Pool federation failed: {exc}') from None

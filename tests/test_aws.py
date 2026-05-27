@@ -162,11 +162,13 @@ class TestGetAwsSessionRefreshOnExpiry(unittest.TestCase):
         creds = {"access_token": expired_token, "id_token": expired_token, "refresh_token": "refresh_tok"}
 
         refresh_response = MagicMock()
-        refresh_response.read.return_value = json.dumps({
-            "access_token": new_access,
-            "id_token": new_id,
-            "expires_in": 3600,
-        }).encode()
+        refresh_response.read.return_value = json.dumps(
+            {
+                "access_token": new_access,
+                "id_token": new_id,
+                "expires_in": 3600,
+            }
+        ).encode()
         refresh_response.__enter__ = lambda s: s
         refresh_response.__exit__ = MagicMock(return_value=False)
 
