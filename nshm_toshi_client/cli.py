@@ -188,13 +188,7 @@ def refresh_token(config: dict, refresh_tok: str) -> dict:
 
 
 def get_aws_credentials(config: dict, id_token: str, profile: str = 'toshi') -> str:
-    """Exchange Cognito id_token for AWS STS credentials via Identity Pool.
-
-    The id_token (not the access_token) must be used here: Cognito Identity
-    Pools validate the ``aud`` claim in the Logins map, and access tokens omit
-    ``aud`` (they carry ``client_id`` instead).  See AWS docs:
-    https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html#enhanced-flow
-    """
+    """Exchange Cognito id_token for AWS STS credentials via Identity Pool."""
     boto3 = _get_boto3()
 
     region = config['region']
