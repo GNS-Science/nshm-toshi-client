@@ -87,19 +87,19 @@ def load_cognito_config() -> dict:
     user_pool_id, identity_pool_id. Missing values are empty strings, except
     region which defaults to 'ap-southeast-2'.
     """
-    _ENV_KEYS = {
+    env_keys = {
         'cognito_domain': 'NZSHM22_TOSHI_COGNITO_DOMAIN',
         'scientist_client_id': 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID',
         'region': 'NZSHM22_TOSHI_COGNITO_REGION',
         'user_pool_id': 'NZSHM22_TOSHI_COGNITO_USER_POOL_ID',
         'identity_pool_id': 'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID',
     }
-    config = {k: os.getenv(env, '') for k, env in _ENV_KEYS.items()}
+    config = {k: os.getenv(env, '') for k, env in env_keys.items()}
 
     # Always read the file so that all keys are picked up regardless of
     # which env vars are set.
     file_config = _load_config_file() or {}
-    for key in _ENV_KEYS:
+    for key in env_keys:
         if not config[key] and file_config.get(key):
             config[key] = file_config[key]
 
