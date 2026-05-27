@@ -187,8 +187,8 @@ def refresh_token(config: dict, refresh_tok: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi') -> str:
-    """Exchange Cognito token for AWS STS credentials via Identity Pool."""
+def get_aws_credentials(config: dict, id_token: str, profile: str = 'toshi') -> str:
+    """Exchange Cognito id_token for AWS STS credentials via Identity Pool."""
     boto3 = _get_boto3()
 
     region = config['region']
@@ -203,7 +203,7 @@ def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi')
     resp = cognito_identity.get_id(
         IdentityPoolId=identity_pool_id,
         Logins={
-            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': access_token,
+            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': id_token,
         },
     )
     identity_id = resp['IdentityId']
@@ -213,7 +213,7 @@ def get_aws_credentials(config: dict, access_token: str, profile: str = 'toshi')
     resp = cognito_identity.get_credentials_for_identity(
         IdentityId=identity_id,
         Logins={
-            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': access_token,
+            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': id_token,
         },
     )
 
@@ -310,6 +310,7 @@ def token(raw):
             token_resp = refresh_token(config, refresh_tok)
             access_token = token_resp['access_token']
             creds['access_token'] = access_token
+            creds['id_token'] = token_resp.get('id_token', '')
             creds['expires_at'] = time.time() + token_resp.get('expires_in', 3600)
             if 'refresh_token' in token_resp:
                 creds['refresh_token'] = token_resp['refresh_token']
@@ -363,19 +364,20 @@ def aws_creds(profile):
     config = load_auth_config()
     creds = load_credentials()
 
-    access_token = creds.get('access_token', '')
-    if not access_token:
+    id_token = creds.get('id_token', '')
+    if not id_token:
         raise click.ClickException('Not logged in. Run: toshi-auth login')
 
-    if is_token_expired(access_token, buffer_seconds=300):
+    if is_token_expired(id_token, buffer_seconds=300):
         refresh_tok = creds.get('refresh_token', '')
         if not refresh_tok:
             raise click.ClickException('Token expired and no refresh token. Run: toshi-auth login')
         click.echo('Token expired, refreshing...', err=True)
         try:
             token_resp = refresh_token(config, refresh_tok)
-            access_token = token_resp['access_token']
-            creds['access_token'] = access_token
+            creds['access_token'] = token_resp['access_token']
+            id_token = token_resp.get('id_token', '')
+            creds['id_token'] = id_token
             creds['expires_at'] = time.time() + token_resp.get('expires_in', 3600)
             if 'refresh_token' in token_resp:
                 creds['refresh_token'] = token_resp['refresh_token']
@@ -383,7 +385,7 @@ def aws_creds(profile):
         except Exception as e:
             raise click.ClickException(f'Token refresh failed: {e}. Run: toshi-auth login') from None
 
-    result_profile = get_aws_credentials(config, access_token, profile)
+    result_profile = get_aws_credentials(config, id_token, profile)
 
     click.echo(f'\nAWS credentials saved to profile [{result_profile}] in ~/.aws/credentials')
     click.echo(f'Use with: export AWS_PROFILE={result_profile}')
