@@ -71,9 +71,6 @@ def load_cognito_config() -> dict:
 
     Env vars take precedence over the file on a per-key basis: if the env var
     is set, it wins; if not, the corresponding key from the JSON file is used.
-    The file is always consulted so that keys with no env-var equivalent
-    (currently ``identity_pool_id``) are never silently dropped when all other
-    env vars are present.
 
     Supported env vars:
     - ``NZSHM22_TOSHI_COGNITO_DOMAIN``
@@ -99,9 +96,8 @@ def load_cognito_config() -> dict:
     }
     config = {k: os.getenv(env, '') for k, env in _ENV_KEYS.items()}
 
-    # Always read the file so that keys with no env-var equivalent
-    # (e.g. identity_pool_id) are picked up regardless of which env vars
-    # are set.
+    # Always read the file so that all keys are picked up regardless of
+    # which env vars are set.
     file_config = _load_config_file() or {}
     for key in _ENV_KEYS:
         if not config[key] and file_config.get(key):
