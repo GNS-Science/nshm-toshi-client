@@ -53,13 +53,6 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Required config keys
-# ---------------------------------------------------------------------------
-
-_REQUIRED_KEYS = ('scientist_client_id', 'cognito_domain', 'region', 'user_pool_id', 'identity_pool_id')
-
-
-# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -78,11 +71,11 @@ def get_aws_session() -> boto3.Session:
     import botocore.exceptions
 
     from nshm_toshi_client.auth import ToshiCredentialAuth
-    from nshm_toshi_client.config import load_cognito_config
+    from nshm_toshi_client.config import COGNITO_CONFIG_KEYS, load_cognito_config
 
     # 1. Resolve config and validate all required keys are present.
     config = load_cognito_config()
-    missing = [k for k in _REQUIRED_KEYS if not config.get(k)]
+    missing = [k for k in COGNITO_CONFIG_KEYS if not config.get(k)]
     if missing:
         raise ConfigIncompleteError(missing)
 
