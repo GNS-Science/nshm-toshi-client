@@ -318,7 +318,10 @@ class TestSubclassKwargsPassthrough(unittest.TestCase):
         from .conftest import mock_secrets_manager
 
         with mock_secrets_manager():
-            return ToshiTokenManager(cognito_domain="https://auth.example.com", secret_arn="arn:fake")
+            return ToshiTokenManager(
+                cognito_domain="https://auth.example.com",
+                secret_arn="arn:aws:secretsmanager:<region>:<account>:secret:<name>",
+            )
 
     def test_toshi_file_accepts_token_manager(self):
         from nshm_toshi_client.toshi_file import ToshiFile
