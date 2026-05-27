@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- `ToshiTokenManager` now derives the AWS region from the Secrets Manager ARN, so `AWS_DEFAULT_REGION` is no longer required in batch environments. An optional `region=` kwarg on `ToshiTokenManager` (and `_fetch_m2m_credentials`) overrides the parsed value.
+
 ### Changed
 - `cli.get_aws_credentials()` passes `id_token` to `GetId` / `GetCredentialsForIdentity` Logins instead of `access_token`.
 - All Cognito keys try env first and fall back to `~/.toshi/auth_config.json` file.

@@ -33,3 +33,16 @@ def mock_secrets_manager(client_id="test-client-id", client_secret="test-client-
     mock_boto3.client.return_value = sm
     with patch.dict('sys.modules', {'boto3': mock_boto3}):
         yield sm
+
+
+@contextmanager
+def mock_secrets_manager_with_boto3(client_id="test-client-id", client_secret="test-client-secret"):
+    """Like mock_secrets_manager but yields (sm, mock_boto3) for call-arg assertions."""
+    sm = MagicMock()
+    sm.get_secret_value.return_value = {
+        'SecretString': json.dumps({'client_id': client_id, 'client_secret': client_secret}),
+    }
+    mock_boto3 = MagicMock()
+    mock_boto3.client.return_value = sm
+    with patch.dict('sys.modules', {'boto3': mock_boto3}):
+        yield sm, mock_boto3

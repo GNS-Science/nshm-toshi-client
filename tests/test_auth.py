@@ -7,16 +7,38 @@ from unittest.mock import MagicMock, patch
 
 import requests_mock
 
-from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager, _fetch_m2m_credentials
+from nshm_toshi_client.auth import ToshiM2MAuth, ToshiTokenManager, _fetch_m2m_credentials, _region_from_arn
 from nshm_toshi_client.toshi_client_base import ToshiClientBase
 
-from .conftest import mock_secrets_manager
+from .conftest import mock_secrets_manager, mock_secrets_manager_with_boto3
 from .conftest import mock_urlopen as _mock_urlopen
 
 COGNITO_DOMAIN = "https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com"
 SECRET_ARN = "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:toshi-m2m-AbCdEf"
 
 TOKEN_RESPONSE = json.dumps({"access_token": "fake.jwt.token", "expires_in": 3600}).encode()
+
+
+class TestRegionFromArn(unittest.TestCase):
+    def test_extracts_region(self):
+        self.assertEqual(
+            _region_from_arn("arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:toshi-m2m-AbCdEf"),
+            "ap-southeast-2",
+        )
+
+    def test_extracts_us_east_1(self):
+        self.assertEqual(
+            _region_from_arn("arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"),
+            "us-east-1",
+        )
+
+    def test_malformed_arn_raises(self):
+        with self.assertRaises(ValueError):
+            _region_from_arn("not-an-arn")
+
+    def test_arn_with_empty_region_raises(self):
+        with self.assertRaises(ValueError):
+            _region_from_arn("arn:aws:secretsmanager::123456789012:secret:name")
 
 
 class TestFetchM2MCredentials(unittest.TestCase):
@@ -26,6 +48,16 @@ class TestFetchM2MCredentials(unittest.TestCase):
         self.assertEqual(client_id, "cid")
         self.assertEqual(client_secret, "csec")
         sm.get_secret_value.assert_called_once_with(SecretId=SECRET_ARN)
+
+    def test_region_parsed_from_arn(self):
+        with mock_secrets_manager_with_boto3() as (sm, mock_boto3):
+            _fetch_m2m_credentials(SECRET_ARN)
+        mock_boto3.client.assert_called_once_with('secretsmanager', region_name='ap-southeast-2')
+
+    def test_region_kwarg_overrides_arn(self):
+        with mock_secrets_manager_with_boto3() as (sm, mock_boto3):
+            _fetch_m2m_credentials(SECRET_ARN, region='us-east-1')
+        mock_boto3.client.assert_called_once_with('secretsmanager', region_name='us-east-1')
 
 
 class TestToshiTokenManager(unittest.TestCase):
@@ -86,6 +118,11 @@ class TestToshiTokenManager(unittest.TestCase):
             manager.get_token()  # should use cache
 
         self.assertEqual(mock_open.call_count, 1)
+
+    def test_region_kwarg_propagates_to_boto3(self):
+        with mock_secrets_manager_with_boto3() as (sm, mock_boto3):
+            ToshiTokenManager(cognito_domain=COGNITO_DOMAIN, secret_arn=SECRET_ARN, region='eu-west-1')
+        mock_boto3.client.assert_called_once_with('secretsmanager', region_name='eu-west-1')
 
 
 class TestToshiM2MAuth(unittest.TestCase):
