@@ -66,6 +66,16 @@ def _load_config_file() -> dict | None:
         return None
 
 
+_COGNITO_ENV_VARS = {
+    'cognito_domain': 'NZSHM22_TOSHI_COGNITO_DOMAIN',
+    'scientist_client_id': 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID',
+    'region': 'NZSHM22_TOSHI_COGNITO_REGION',
+    'user_pool_id': 'NZSHM22_TOSHI_COGNITO_USER_POOL_ID',
+    'identity_pool_id': 'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID',
+}
+COGNITO_CONFIG_KEYS = tuple(_COGNITO_ENV_VARS)
+
+
 def load_cognito_config() -> dict:
     """Resolve the Cognito config from env vars, with JSON-file fallback.
 
@@ -87,19 +97,12 @@ def load_cognito_config() -> dict:
     user_pool_id, identity_pool_id. Missing values are empty strings, except
     region which defaults to 'ap-southeast-2'.
     """
-    env_keys = {
-        'cognito_domain': 'NZSHM22_TOSHI_COGNITO_DOMAIN',
-        'scientist_client_id': 'NZSHM22_TOSHI_COGNITO_SCIENTIST_CLIENT_ID',
-        'region': 'NZSHM22_TOSHI_COGNITO_REGION',
-        'user_pool_id': 'NZSHM22_TOSHI_COGNITO_USER_POOL_ID',
-        'identity_pool_id': 'NZSHM22_TOSHI_COGNITO_IDENTITY_POOL_ID',
-    }
-    config = {k: os.getenv(env, '') for k, env in env_keys.items()}
+    config = {k: os.getenv(env, '') for k, env in _COGNITO_ENV_VARS.items()}
 
     # Always read the file so that all keys are picked up regardless of
     # which env vars are set.
     file_config = _load_config_file() or {}
-    for key in env_keys:
+    for key in _COGNITO_ENV_VARS:
         if not config[key] and file_config.get(key):
             config[key] = file_config[key]
 

@@ -134,14 +134,18 @@ class TestToshiCredentialAuth(unittest.TestCase):
         self.assertIn(f"client_id={self.CLIENT_ID}", req.data.decode())
 
     def test_raises_when_no_credentials(self):
+        from nshm_toshi_client.aws import NoCredentialsError
+
         with patch('nshm_toshi_client.auth.load_credentials', return_value={}):
             auth = ToshiCredentialAuth(self.DOMAIN, self.CLIENT_ID)
             mock_request = MagicMock()
             mock_request.headers = {}
-            with self.assertRaises(RuntimeError, msg="No credentials found"):
+            with self.assertRaises(NoCredentialsError):
                 auth(mock_request)
 
     def test_raises_when_expired_no_refresh_token(self):
+        from nshm_toshi_client.aws import RefreshFailedError
+
         expired_token = _make_jwt({"exp": time.time() - 100})
         creds = {"access_token": expired_token}
 
@@ -149,8 +153,126 @@ class TestToshiCredentialAuth(unittest.TestCase):
             auth = ToshiCredentialAuth(self.DOMAIN, self.CLIENT_ID)
             mock_request = MagicMock()
             mock_request.headers = {}
-            with self.assertRaises(RuntimeError, msg="no refresh token"):
+            with self.assertRaises(RefreshFailedError):
                 auth(mock_request)
+
+
+class TestToshiCredentialAuthPublicMethods(unittest.TestCase):
+    """Tests for the public get_token() and get_id_token() methods added in issue #50."""
+
+    DOMAIN = "https://toshi-auth.example.auth.ap-southeast-2.amazoncognito.com"
+    CLIENT_ID = "scientist_client_id"
+
+    def _make_auth(self):
+        return ToshiCredentialAuth(self.DOMAIN, self.CLIENT_ID)
+
+    # --- get_token() ---
+
+    def test_get_token_returns_access_token(self):
+        valid_token = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": valid_token, "refresh_token": "tok"}
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
+            result = self._make_auth().get_token()
+
+        self.assertEqual(result, valid_token)
+
+    def test_get_token_raises_no_credentials_when_missing(self):
+        from nshm_toshi_client.aws import NoCredentialsError
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value={}):
+            with self.assertRaises(NoCredentialsError):
+                self._make_auth().get_token()
+
+    def test_get_token_raises_refresh_failed_when_expired_no_refresh(self):
+        from nshm_toshi_client.aws import RefreshFailedError
+
+        expired = _make_jwt({"exp": time.time() - 100})
+        creds = {"access_token": expired}
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
+            with self.assertRaises(RefreshFailedError):
+                self._make_auth().get_token()
+
+    def test_get_token_refreshes_and_returns_new_token(self):
+        expired = _make_jwt({"exp": time.time() - 100})
+        new_token = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": expired, "refresh_token": "ref_tok"}
+
+        refresh_response = MagicMock()
+        refresh_response.read.return_value = json.dumps({"access_token": new_token, "expires_in": 3600}).encode()
+        refresh_response.__enter__ = lambda s: s
+        refresh_response.__exit__ = MagicMock(return_value=False)
+
+        with (
+            patch('nshm_toshi_client.auth.load_credentials', return_value=creds),
+            patch('nshm_toshi_client.auth.save_credentials'),
+            patch('nshm_toshi_client.auth.urllib_request.urlopen', return_value=refresh_response),
+        ):
+            result = self._make_auth().get_token()
+
+        self.assertEqual(result, new_token)
+
+    # --- get_id_token() ---
+
+    def test_get_id_token_returns_id_token(self):
+        valid_access = _make_jwt({"exp": time.time() + 3600})
+        valid_id = _make_jwt({"exp": time.time() + 3600, "aud": "scientist_client_id"})
+        creds = {"access_token": valid_access, "id_token": valid_id, "refresh_token": "tok"}
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
+            result = self._make_auth().get_id_token()
+
+        self.assertEqual(result, valid_id)
+
+    def test_get_id_token_raises_no_credentials_when_id_token_absent(self):
+        from nshm_toshi_client.aws import NoCredentialsError
+
+        valid_access = _make_jwt({"exp": time.time() + 3600})
+        creds = {"access_token": valid_access}  # no id_token
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
+            with self.assertRaises(NoCredentialsError):
+                self._make_auth().get_id_token()
+
+    def test_get_id_token_raises_no_credentials_when_creds_missing(self):
+        from nshm_toshi_client.aws import NoCredentialsError
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value={}):
+            with self.assertRaises(NoCredentialsError):
+                self._make_auth().get_id_token()
+
+    def test_get_id_token_raises_refresh_failed_when_expired_no_refresh(self):
+        from nshm_toshi_client.aws import RefreshFailedError
+
+        expired = _make_jwt({"exp": time.time() - 100})
+        creds = {"access_token": expired, "id_token": expired}
+
+        with patch('nshm_toshi_client.auth.load_credentials', return_value=creds):
+            with self.assertRaises(RefreshFailedError):
+                self._make_auth().get_id_token()
+
+    def test_get_id_token_refreshes_and_returns_new_id_token(self):
+        expired = _make_jwt({"exp": time.time() - 100})
+        new_access = _make_jwt({"exp": time.time() + 3600})
+        new_id = _make_jwt({"exp": time.time() + 3600, "aud": "scientist_client_id"})
+        creds = {"access_token": expired, "id_token": expired, "refresh_token": "ref_tok"}
+
+        refresh_response = MagicMock()
+        refresh_response.read.return_value = json.dumps(
+            {"access_token": new_access, "id_token": new_id, "expires_in": 3600}
+        ).encode()
+        refresh_response.__enter__ = lambda s: s
+        refresh_response.__exit__ = MagicMock(return_value=False)
+
+        with (
+            patch('nshm_toshi_client.auth.load_credentials', return_value=creds),
+            patch('nshm_toshi_client.auth.save_credentials'),
+            patch('nshm_toshi_client.auth.urllib_request.urlopen', return_value=refresh_response),
+        ):
+            result = self._make_auth().get_id_token()
+
+        self.assertEqual(result, new_id)
 
 
 class TestToshiClientBaseWithCredentialAuth(unittest.TestCase):

@@ -32,8 +32,12 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+if TYPE_CHECKING:
+    import boto3
 
 from nshm_toshi_client.auth import (
     CREDENTIALS_PATH,
@@ -41,6 +45,13 @@ from nshm_toshi_client.auth import (
     is_token_expired,
     load_credentials,
     save_credentials,
+)
+from nshm_toshi_client.aws import (
+    ConfigIncompleteError,
+    IdentityPoolError,
+    NoCredentialsError,
+    RefreshFailedError,
+    get_aws_session,
 )
 
 try:
@@ -187,39 +198,18 @@ def refresh_token(config: dict, refresh_tok: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def get_aws_credentials(config: dict, id_token: str, profile: str = 'toshi') -> str:
-    """Exchange Cognito id_token for AWS STS credentials via Identity Pool."""
-    boto3 = _get_boto3()
+def get_aws_credentials(session: "boto3.Session", profile: str = 'toshi') -> str:
+    """Write STS credentials from a boto3 Session to ~/.aws/credentials.
 
-    region = config['region']
-    identity_pool_id = config.get('identity_pool_id')
+    The Session is produced by ``nshm_toshi_client.aws.get_aws_session()``,
+    which handles the Cognito Identity Pool federation.  Keeping these two
+    steps separate lets non-CLI callers use the Session directly without
+    touching the credentials file.
+    """
+    frozen = session.get_credentials().get_frozen_credentials()
+    region = session.region_name
 
-    if not identity_pool_id:
-        raise click.ClickException('Identity Pool ID not found in config.')
-
-    cognito_identity = boto3.client('cognito-identity', region_name=region)
-
-    click.echo(f'Getting Identity ID from pool: {identity_pool_id} ...')
-    resp = cognito_identity.get_id(
-        IdentityPoolId=identity_pool_id,
-        Logins={
-            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': id_token,
-        },
-    )
-    identity_id = resp['IdentityId']
-    click.echo(f'  Identity ID: {identity_id}')
-
-    click.echo('Getting temporary AWS credentials ...')
-    resp = cognito_identity.get_credentials_for_identity(
-        IdentityId=identity_id,
-        Logins={
-            f'cognito-idp.{region}.amazonaws.com/{config["user_pool_id"]}': id_token,
-        },
-    )
-
-    creds = resp['Credentials']
-    click.echo(f'  AccessKeyId: {creds["AccessKeyId"]}')
-    click.echo(f'  Expires: {creds["Expiration"].astimezone(timezone.utc).isoformat()}')
+    click.echo(f'  AccessKeyId: {frozen.access_key}')
 
     aws_credentials_path = Path.home() / '.aws' / 'credentials'
     aws_credentials_path.parent.mkdir(parents=True, exist_ok=True)
@@ -234,9 +224,9 @@ def get_aws_credentials(config: dict, id_token: str, profile: str = 'toshi') -> 
 
     if profile not in parser.sections():
         parser.add_section(profile)
-    parser.set(profile, 'aws_access_key_id', creds['AccessKeyId'])
-    parser.set(profile, 'aws_secret_access_key', creds['SecretKey'])
-    parser.set(profile, 'aws_session_token', creds['SessionToken'])
+    parser.set(profile, 'aws_access_key_id', frozen.access_key)
+    parser.set(profile, 'aws_secret_access_key', frozen.secret_key)
+    parser.set(profile, 'aws_session_token', frozen.token)
     parser.set(profile, 'region', region)
 
     with open(aws_credentials_path, 'w') as f:
@@ -360,32 +350,21 @@ def whoami():
 @cli.command('aws-creds')
 @click.option('--profile', default='toshi', help='AWS credentials profile name', show_default=True)
 def aws_creds(profile):
-    """Exchange Cognito token for AWS STS credentials and write to ~/.aws/credentials."""
-    config = load_auth_config()
-    creds = load_credentials()
+    """Exchange Cognito token for AWS STS credentials and write to ~/.aws/credentials.
 
-    id_token = creds.get('id_token', '')
-    if not id_token:
-        raise click.ClickException('Not logged in. Run: toshi-auth login')
+    For in-process Python callers, use ``nshm_toshi_client.aws.get_aws_session()``
+    directly — this command exists for shells, the ``aws`` CLI, and tools that
+    already use the boto3 default credential chain.
+    """
+    click.echo('Getting AWS credentials via Identity Pool...')
+    try:
+        session = get_aws_session()
+    except (NoCredentialsError, RefreshFailedError, ConfigIncompleteError) as exc:
+        raise click.ClickException(f'{exc}') from None
+    except IdentityPoolError as exc:
+        raise click.ClickException(f'Identity Pool federation failed: {exc}') from None
 
-    if is_token_expired(id_token, buffer_seconds=300):
-        refresh_tok = creds.get('refresh_token', '')
-        if not refresh_tok:
-            raise click.ClickException('Token expired and no refresh token. Run: toshi-auth login')
-        click.echo('Token expired, refreshing...', err=True)
-        try:
-            token_resp = refresh_token(config, refresh_tok)
-            creds['access_token'] = token_resp['access_token']
-            id_token = token_resp.get('id_token', '')
-            creds['id_token'] = id_token
-            creds['expires_at'] = time.time() + token_resp.get('expires_in', 3600)
-            if 'refresh_token' in token_resp:
-                creds['refresh_token'] = token_resp['refresh_token']
-            save_credentials(creds)
-        except Exception as e:
-            raise click.ClickException(f'Token refresh failed: {e}. Run: toshi-auth login') from None
-
-    result_profile = get_aws_credentials(config, id_token, profile)
+    result_profile = get_aws_credentials(session, profile)
 
     click.echo(f'\nAWS credentials saved to profile [{result_profile}] in ~/.aws/credentials')
     click.echo(f'Use with: export AWS_PROFILE={result_profile}')
