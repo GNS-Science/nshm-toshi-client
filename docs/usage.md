@@ -21,10 +21,7 @@ M2M credentials live in AWS Secrets Manager and are fetched at process start usi
 }
 ```
 
-Grant your runtime IAM role `secretsmanager:GetSecretValue` on the secret ARN,
-then set these env vars and the client configures itself automatically. The AWS
-region is derived automatically from the secret ARN, so `AWS_DEFAULT_REGION`
-does not need to be set for the M2M path.
+Grant your runtime IAM role `secretsmanager:GetSecretValue` on the secret ARN, then set these env vars and the client configures itself automatically. The AWS region is derived automatically from the secret ARN, so `AWS_DEFAULT_REGION` does not need to be set for the M2M path.
 
 ```bash
 export NZSHM22_TOSHI_API_URL=https://example-api-url.com/graphql

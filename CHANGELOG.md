@@ -16,12 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `toshi-auth aws-creds` was passing `access_token` to the Cognito Identity Pool `GetId`/`GetCredentialsForIdentity` `Logins` map; Identity Pools validate the `aud` claim, which access tokens omit. Now passes `id_token`. Closes #48 (Bug 1).
 - `config.load_cognito_config()` only consulted `~/.toshi/auth_config.json` when at least one of the four `NZSHM22_TOSHI_COGNITO_*` env vars was missing, causing `identity_pool_id` to be silently dropped when all four env vars were set. File is now always consulted.
-
-### Fixed
 - `ToshiTokenManager` now derives the AWS region from the Secrets Manager ARN, so `AWS_DEFAULT_REGION` is no longer required in batch environments. An optional `region=` kwarg on `ToshiTokenManager` (and `_fetch_m2m_credentials`) overrides the parsed value.
 
 ### Changed
 - `cli.get_aws_credentials()` signature changed from `(config, id_token, profile)` to `(session, profile)` — accepts a `boto3.Session` produced by `aws.get_aws_session()` and writes its credentials to `~/.aws/credentials`. `toshi-auth aws-creds` behaviour is unchanged.
+- `cli.get_aws_credentials()` passes `id_token` to `GetId` / `GetCredentialsForIdentity` Logins instead of `access_token`.
+- All Cognito keys try env first and fall back to `~/.toshi/auth_config.json` file.
 
 ## [1.2.3] - 2026-05-22
 
