@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-import os
 import threading
 import time
 from pathlib import Path
@@ -9,6 +8,8 @@ from urllib import parse
 from urllib import request as urllib_request
 
 from requests.auth import AuthBase
+
+from nshm_toshi_client import config
 
 CREDENTIALS_PATH = Path.home() / '.toshi' / 'credentials'
 
@@ -97,7 +98,7 @@ class ToshiTokenManager:
             region: AWS region for Secrets Manager. Derived from `secret_arn` when not given.
         """
         if secret_arn is None:
-            secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN') or None
+            secret_arn = config.M2M_SECRET_ARN or None
         if not secret_arn:
             raise ValueError("M2M credentials not configured: pass secret_arn or set NZSHM22_TOSHI_M2M_SECRET_ARN.")
         self._client_id, self._client_secret = _fetch_m2m_credentials(secret_arn, region=region)

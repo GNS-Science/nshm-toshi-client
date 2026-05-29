@@ -66,13 +66,13 @@ class TestToshiTokenManager(unittest.TestCase):
             return ToshiTokenManager(cognito_domain=COGNITO_DOMAIN, secret_arn=SECRET_ARN)
 
     def test_requires_secret_arn(self):
-        with patch.dict('os.environ', {'NZSHM22_TOSHI_M2M_SECRET_ARN': ''}):
+        with patch('nshm_toshi_client.config.M2M_SECRET_ARN', ''):
             with self.assertRaises(ValueError) as ctx:
                 ToshiTokenManager(cognito_domain=COGNITO_DOMAIN)
             self.assertIn("M2M credentials not configured", str(ctx.exception))
 
     def test_reads_secret_arn_from_env(self):
-        with patch.dict('os.environ', {'NZSHM22_TOSHI_M2M_SECRET_ARN': SECRET_ARN}):
+        with patch('nshm_toshi_client.config.M2M_SECRET_ARN', SECRET_ARN):
             with mock_secrets_manager(client_id="env-cid", client_secret="env-csec"):
                 manager = ToshiTokenManager(cognito_domain=COGNITO_DOMAIN)
         self.assertEqual(manager._client_id, "env-cid")
