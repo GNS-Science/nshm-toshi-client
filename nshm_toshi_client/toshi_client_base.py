@@ -14,13 +14,12 @@ this module.
 """
 
 import logging
-import os
 
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
+from nshm_toshi_client import config
 from nshm_toshi_client.auth import CREDENTIALS_PATH, ToshiCredentialAuth, ToshiM2MAuth, ToshiTokenManager
-from nshm_toshi_client.config import load_cognito_config
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +82,11 @@ class ToshiClientBase:
             and NZSHM22_TOSHI_M2M_SECRET_ARN + NZSHM22_TOSHI_COGNITO_DOMAIN are set, one is
             created automatically (credentials fetched from AWS Secrets Manager).
         """
-        cognito = load_cognito_config()
+        cognito = config.load_cognito_config()
         cognito_domain = cognito['cognito_domain']
         scientist_client_id = cognito['scientist_client_id']
 
-        secret_arn = os.environ.get('NZSHM22_TOSHI_M2M_SECRET_ARN')
+        secret_arn = config.M2M_SECRET_ARN or None
         if token_manager is None and secret_arn and cognito_domain:
             if auth_token is not None:
                 logger.warning(
