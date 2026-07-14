@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.2] - 2026-07-14
 
 ### Changed
 - deps: patch upgrades (14 pkgs) — incl. security fixes for `pip` (GHSA-wf93-45jw-7689) and `uv` (GHSA-4gg8-gxpx-9rph).
