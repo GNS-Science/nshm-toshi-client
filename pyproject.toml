@@ -19,7 +19,6 @@ requires-python = ">=3.10,<4.0"
 dependencies = [
   "boto3>=1.43.7",
   "gql[requests]>=4.0.0",
-  "graphql-core>=3.2.1",
   "requests>=2.27.1",
 ]
 
@@ -73,6 +72,17 @@ include = ["nshm_toshi_client", "tests"]
 
 [tool.uv]
 exclude-newer = "1 week"
+
+# Exempt NSHM-ecosystem packages (prefixes: nshm, nzshm, solvis, weka, toshi)
+# from the 1-week age cutoff so they can be upgraded regardless of release age.
+# uv matches exact package names; `false` disables exclude-newer for that package.
+[tool.uv.exclude-newer-package]
+"nzshm-model" = false
+"nzshm-common" = false
+"solvis" = false
+"toshi-hazard-store" = false
+"nshm-toshi-client" = false
+"weka" = false
 
 [tool.ruff]
 line-length = 120
