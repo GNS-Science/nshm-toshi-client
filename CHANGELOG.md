@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- deps: patch upgrades (14 pkgs) — incl. security fixes for `pip` (GHSA-wf93-45jw-7689) and `uv` (GHSA-4gg8-gxpx-9rph).
+- deps: minor upgrades (30 pkgs) — incl. security fixes for `joserfc` (1.6.5→1.7.2) and `msgpack` (1.1.2→1.2.1); `graphql-core` held at 3.2.11 (latest 3.3.0a1 is a prerelease).
+- deps: major upgrades — `cryptography` 48→49 (GHSA-537c-gmf6-5ccf), `pymdown-extensions` 10→11, `bracex` 2→3.
+- deps: `nltk` held at 3.9.4 — fix 3.10.0 is newer than the 1-week age cutoff and `nltk` (transitive of `safety`) is not an exempt-prefix package (PYSEC-2026-597 remains open).
+
 ## [1.3.1] - 2026-05-29
 
 ### Changed
