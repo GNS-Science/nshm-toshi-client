@@ -1677,7 +1677,6 @@ source = { editable = "." }
 dependencies = [
     { name = "boto3" },
     { name = "gql", extra = ["requests"] },
-    { name = "graphql-core" },
     { name = "requests" },
 ]
 
@@ -1719,7 +1718,6 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.43.7" },
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.0" },
     { name = "gql", extras = ["requests"], specifier = ">=4.0.0" },
-    { name = "graphql-core", specifier = ">=3.2.1" },
     { name = "python-dotenv", marker = "extra == 'cli'", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.27.1" },
 ]
