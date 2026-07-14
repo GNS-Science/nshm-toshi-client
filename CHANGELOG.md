@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: major upgrades — `cryptography` 48→49 (GHSA-537c-gmf6-5ccf), `pymdown-extensions` 10→11, `bracex` 2→3.
 - deps: `nltk` held at 3.9.4 — fix 3.10.0 is newer than the 1-week age cutoff and `nltk` (transitive of `safety`) is not an exempt-prefix package (PYSEC-2026-597 remains open).
 
+### Removed
+- deps: dropped redundant direct `graphql-core` dependency — it is not imported directly and is guaranteed transitively by `gql[requests]`.
+
 ## [1.3.1] - 2026-05-29
 
 ### Changed
