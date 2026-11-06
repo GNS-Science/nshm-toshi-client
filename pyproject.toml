@@ -39,6 +39,7 @@ doc = [
     "mkdocs-pymdownx-material-extras>=2.5.6",
     "mkdocstrings>=0.26.2",
     "mkdocstrings-python>=2.0.3",
+    "pymdown-extensions<12",
 ]
 dev = [
     "ipython>=8.11.0",

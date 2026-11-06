@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- deps: major (transitive): backrefs 7→8, cryptography 49→50, multidict 6→7, wcmatch 10→11, filelock 3.29→3.32 (4.x blocked by parent constraints); pymdown-extensions held at <12 (12 removes `uslugify`, breaking the mkdocs build); python-dateutil 3.0 not reachable.
+- deps: minor and patch upgrades via `uv lock --upgrade`.
+
 ## [1.3.2] - 2026-07-14
 
 ### Changed
