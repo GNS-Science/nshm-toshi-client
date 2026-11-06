@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- deps: major (transitive): `backrefs` 7→8, `multidict` 6→7 (PYSEC-2026-4244), `pymdown-extensions` 11→12, `wcmatch` 10→11; `filelock` 3.29→3.32.
+- deps: `filelock` constrained to >=4.2.1 on Python>=3.11 (GHSA-rfpc-qcw5-3pc4 et al.); Python 3.10 remains on 3.x as 4.x requires Python>=3.11.
+- deps: minor upgrades (39 pkgs) — incl. security fixes for `anyio`, `certifi`, `graphql-core`, `mkdocs-material`, `pip`, `urllib3`, `uv`, `virtualenv`.
+- deps: patch upgrades (18 pkgs) — incl. security fix for `msgpack` (GHSA-j586-36cw-2gc2).
+- deps: `python-dateutil` held at 2.9.0.post0 (botocore constraint).
+
 ## [1.3.2] - 2026-07-14
 
 ### Changed
