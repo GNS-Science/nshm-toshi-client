@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.3] - 2026-11-10
 
 ### Changed
 - deps: major (transitive): `backrefs` 7→8, `multidict` 6→7 (PYSEC-2026-4244), `pymdown-extensions` 11→12, `wcmatch` 10→11; `filelock` 3.29→3.32.
