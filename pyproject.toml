@@ -14,7 +14,7 @@ classifiers=[
     'Natural Language :: English',
     'Programming Language :: Python :: 3',
 ]
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12,<4.0"
 
 dependencies = [
   "boto3>=1.43.7",
@@ -71,9 +71,7 @@ include = ["nshm_toshi_client", "tests"]
 
 [tool.uv]
 exclude-newer = "1 week"
-# filelock>=4.2.1 fixes GHSA-rfpc-qcw5-3pc4 et al. but requires Python>=3.11;
-# Python 3.10 stays on filelock 3.x until 3.10 support is dropped.
-constraint-dependencies = ["filelock>=4.2.1; python_version >= '3.11'"]
+constraint-dependencies = ["filelock>=4.2.1"]
 
 # Exempt NSHM-ecosystem packages (prefixes: nshm, nzshm, solvis, weka, toshi)
 # from the 1-week age cutoff so they can be upgraded regardless of release age.
