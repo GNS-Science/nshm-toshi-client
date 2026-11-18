@@ -18,9 +18,6 @@ solvis = false
 toshi-hazard-store = false
 weka = false
 
-[manifest]
-constraints = [{ name = "filelock", specifier = ">=4.2.1" }]
-
 [[package]]
 name = "anyio"
 version = "4.16.0"

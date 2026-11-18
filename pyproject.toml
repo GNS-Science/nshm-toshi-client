@@ -71,7 +71,6 @@ include = ["nshm_toshi_client", "tests"]
 
 [tool.uv]
 exclude-newer = "1 week"
-constraint-dependencies = ["filelock>=4.2.1"]
 
 # Exempt NSHM-ecosystem packages (prefixes: nshm, nzshm, solvis, weka, toshi)
 # from the 1-week age cutoff so they can be upgraded regardless of release age.
