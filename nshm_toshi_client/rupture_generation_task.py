@@ -1,7 +1,7 @@
 import base64
 import json
+from datetime import UTC
 from datetime import datetime as dt
-from datetime import timezone
 from hashlib import md5
 from os import PathLike
 from pathlib import PurePath
@@ -91,7 +91,7 @@ class RuptureGenerationTask(ToshiClientBase):
         size = len(filedata.read())
         filedata.close()
 
-        created = dt.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z"
+        created = dt.now(UTC).replace(tzinfo=None).isoformat() + "Z"
         variables = dict(
             md5_digest=digest,
             file_name=filepath.parts[-1],

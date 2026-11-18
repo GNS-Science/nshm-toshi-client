@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-19
+
+### Changed
+- Python requirement raised to `>=3.12,<4.0`; test matrix is now 3.12, 3.13, 3.14.
+- deps: lockfile upgraded to latest allowed versions (e.g. `watchdog` 6→7, `wcmatch` 11→12).
+
 ## [1.3.3] - 2026-11-10
 
 ### Changed

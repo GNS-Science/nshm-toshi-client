@@ -30,7 +30,7 @@ import configparser
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlencode
@@ -265,7 +265,7 @@ def login():
     click.echo(f'\nLogged in as: {payload.get("username") or payload.get("sub", "unknown")}')
     click.echo(f'Scopes: {payload.get("scope", "none")}')
     exp = payload.get('exp', 0)
-    click.echo(f'Expires: {datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()}')
+    click.echo(f'Expires: {datetime.fromtimestamp(exp, tz=UTC).isoformat()}')
     click.echo(f'\nToken saved to: {CREDENTIALS_PATH}')
 
 
@@ -335,13 +335,13 @@ def whoami():
     click.echo(f'Token use:      {payload.get("token_use", "n/a")}')
 
     exp = payload.get('exp', 0)
-    exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+    exp_dt = datetime.fromtimestamp(exp, tz=UTC)
     status = 'EXPIRED' if expired else 'valid'
     click.echo(f'Expires:        {exp_dt.isoformat()} [{status}]')
 
     iat = payload.get('iat', 0)
     if iat:
-        iat_dt = datetime.fromtimestamp(iat, tz=timezone.utc)
+        iat_dt = datetime.fromtimestamp(iat, tz=UTC)
         click.echo(f'Issued at:      {iat_dt.isoformat()}')
 
     click.echo(f'\nGroups:         {payload.get("cognito:groups", [])}')

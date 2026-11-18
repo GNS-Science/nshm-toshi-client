@@ -13,7 +13,7 @@ uv sync --all-groups --all-extras
 ```bash
 uv run pytest tests/                          # full suite
 uv run pytest tests/ -k <pattern>             # single test or subset
-uv run tox                                    # full tox matrix (py310–312, lint, format, audit, build)
+uv run tox                                    # full tox matrix (py312–314, lint, format, audit, build)
 ```
 
 **Linting & formatting:**
